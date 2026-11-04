@@ -1,6 +1,24 @@
+#githubに含めないものをここに記述 
+
 # Python / Django
 venv/
 __pycache__/
 *.pyc
 db.sqlite3
 .DS_Store
+
+# Build 成果物
+/build/
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# IDE・エディタ関連
+.vscode/
+.idea/
+*.iml
+
+# OSが自動生成するファイル
+.DS_Store
+Thumbs.db
