@@ -22,3 +22,16 @@ db.sqlite3
 # OSが自動生成するファイル
 .DS_Store
 Thumbs.db
+
+# 環境変数・認証情報
+.env
+*.pem
+*.key
+serviceAccount*.json
+*firebase-adminsdk*.json
+
+# Django
+*.sqlite3
+*.log
+media/
+staticfiles/
