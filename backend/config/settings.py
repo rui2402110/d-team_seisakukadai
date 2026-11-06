@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 
+import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -120,3 +121,11 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+INSTALLED_APPS += ["accounts"]
+AUTH_USER_MODEL = "accounts.User"
+
+ICON_STORAGE = os.environ.get("ICON_STORAGE", "local")   # S3移行時は "s3" に変える
+AWS_S3_BUCKET = os.environ.get("AWS_S3_BUCKET", "")
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"

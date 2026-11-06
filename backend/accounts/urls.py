@@ -1,10 +1,6 @@
-"""accounts/urls.py"""
 from django.urls import path
-
-from accounts import views
-
-app_name = "accounts"
-
+from accounts.views.loginView import *
+from accounts.views.registerView import registerView
 urlpatterns = [
-    path("", views.index_view, name="index"),
+    path("register/", registerView, name="register"),
 ]
