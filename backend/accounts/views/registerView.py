@@ -1,4 +1,4 @@
-# accounts/views/register_view.py
+# accounts/views/registerView.py
 import json
 from django.db import IntegrityError
 from django.http import JsonResponse
@@ -11,8 +11,8 @@ from core.storage import default_icon_url
 
 @csrf_exempt
 @require_POST
-def register_view(request):
-    # --- トークン検証(uidはここからだけ取る) ---
+def registerView(request):
+    # --- トークン検証(uid) ---
     header = request.headers.get("Authorization", "")
     if not header.startswith("Bearer "):
         return JsonResponse({"error": "no_token"}, status=401)
@@ -30,7 +30,7 @@ def register_view(request):
     if not name or len(name) > 50:
         return JsonResponse({"error": "invalid_name"}, status=400)
 
-    # --- 4. すでに登録済みなら、そのまま成功として返す(やり直しに対応) ---
+    # --- すでに登録済みなら、そのまま成功として返す(やり直しに対応) ---
     existing = User.objects.filter(firebase_uid=uid).first()
     if existing:
         return JsonResponse({"user": _to_dict(existing)}, status=200)

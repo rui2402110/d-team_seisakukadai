@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-*^c+6gm6+0c6_wl#1*mt02e07u(kar9!bm-@0^f6$pyc089yc=
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "10.0.2.2"]  # 10.0.2.2 = Androidエミュレータ
 
 
 # Application definition
@@ -38,9 +38,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
+    'accounts',
+    'timeline',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',  # CommonMiddlewareより前に置く
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -50,7 +54,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'backend.urls'
+ROOT_URLCONF = 'config.urls'
 
 TEMPLATES = [
     {
@@ -67,7 +71,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'backend.wsgi.application'
+WSGI_APPLICATION = 'config.wsgi.application'
 
 
 # Database
@@ -122,10 +126,16 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-INSTALLED_APPS += ["accounts"]
 AUTH_USER_MODEL = "accounts.User"
 
-ICON_STORAGE = os.environ.get("ICON_STORAGE", "local")   # S3移行時は "s3" に変える
+# S3移行時に "s3" に変える
+ICON_STORAGE = os.environ.get("ICON_STORAGE", "local")  
 AWS_S3_BUCKET = os.environ.get("AWS_S3_BUCKET", "")
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+# flutterのローカルホストの番地を許可
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5000",
+    "http://127.0.0.1:5000",
+]
