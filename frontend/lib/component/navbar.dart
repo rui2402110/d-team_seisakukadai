@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'timeline.dart';
-import 'profile.dart';
+import '../timeline/page/timeline_page.dart';
+import '../profile.dart';
 
 void main() {
   runApp(const MyApp());
