@@ -1,11 +1,17 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../repository/auth_repository.dart';
 
+import '../repository/auth_repository.dart';
+import '../widget/auth_widgets.dart';
+import 'login_page.dart';
+
+/// 新規登録画面
 class RegisterPage extends StatefulWidget {
-  /// true: Firebaseには作成済み(ログイン時に未登録と判定された場合)
+  /// true: Firebaseには作成済み(ログイン時に未登録と判定された場合など)
   final bool alreadySignedIn;
+
   const RegisterPage({super.key, this.alreadySignedIn = false});
+
   @override
   State<RegisterPage> createState() => _RegisterPageState();
 }
@@ -14,120 +20,192 @@ class _RegisterPageState extends State<RegisterPage> {
   final _name = TextEditingController();
   final _email = TextEditingController();
   final _password = TextEditingController();
+  final _confirm = TextEditingController();
   final _repo = AuthRepository();
+
   bool _loading = false;
-  String? _error;
+  bool _firebaseDone = false; // Firebase作成済みなら、再試行時に作成を飛ばす
+  String? _nameError;
+  String? _emailError;
+  String? _passwordError;
+  String? _confirmError;
+  String? _message;
+
+  @override
+  void initState() {
+    super.initState();
+    _firebaseDone = widget.alreadySignedIn;
+  }
 
   @override
   void dispose() {
     _name.dispose();
     _email.dispose();
     _password.dispose();
+    _confirm.dispose();
     super.dispose();
   }
 
-  Future<void> _register() async {
+  /// 入力チェック 問題がなければ true
+  bool _validate() {
     final name = _name.text.trim();
-    if (name.isEmpty || name.length > 50) {
-      setState(() => _error = '名前は1〜50文字で入力してください');
-      return;
+    String? nameError;
+    if (name.isEmpty) {
+      nameError = 'ユーザー名を入力してください';
+    } else if (name.length > 50) {
+      nameError = 'ユーザー名は50文字以内で入力してください';
     }
-    setState(() { _loading = true; _error = null; });
+
+    String? emailError;
+    String? passwordError;
+    String? confirmError;
+    if (!_firebaseDone) {
+      if (_email.text.trim().isEmpty) emailError = 'メールアドレスを入力してください';
+      if (_password.text.isEmpty) passwordError = 'パスワードを入力してください';
+      if (_confirm.text.isEmpty) {
+        confirmError = '確認用のパスワードを入力してください';
+      } else if (_confirm.text != _password.text) {
+        confirmError = 'パスワードが一致しません';
+      }
+    }
+
+    setState(() {
+      _nameError = nameError;
+      _emailError = emailError;
+      _passwordError = passwordError;
+      _confirmError = confirmError;
+      _message = null;
+    });
+    return nameError == null &&
+        emailError == null &&
+        passwordError == null &&
+        confirmError == null;
+  }
+
+  Future<void> _register() async {
+    if (!_validate()) return;
+
+    setState(() => _loading = true);
     try {
       final auth = FirebaseAuth.instance;
       User? user = auth.currentUser;
 
       // Firebaseのアカウント作成(作成済みなら飛ばす = やり直し対応)
-      if (!widget.alreadySignedIn || user == null) {
+      if (!_firebaseDone || user == null) {
         final cred = await auth.createUserWithEmailAndPassword(
           email: _email.text.trim(),
           password: _password.text,
         );
         user = cred.user;
+        _firebaseDone = true;
       }
 
       final token = await user!.getIdToken();
-      await _repo.register(token!, name); // Django: ユーザーDBに作成
+      await _repo.register(token!, _name.text.trim()); // Django: ユーザーDBに作成
 
       if (!mounted) return;
-      // 3. 戻り先の履歴を消してタイムラインへ
       Navigator.of(context).pushNamedAndRemoveUntil('/timeline', (_) => false);
     } on FirebaseAuthException catch (e) {
-      setState(() => _error = _firebaseMessage(e.code));
+      _showFirebaseError(e.code);
     } on ApiException catch (e) {
-      // Firebaseは作成済み。もう一度押せば、Firebase作成を飛ばして再試行する
-      setState(() => _error = '${e.message}。もう一度「新規登録」を押してください');
-      _markFirebaseDone();
+      // Firebaseは作成済み。もう一度押せば、register だけが再実行される
+      setState(() => _message = '${e.message}。もう一度「登録する」を押してください');
     } catch (_) {
-      setState(() => _error = '通信に失敗しました。ネットワークを確認してください');
-      _markFirebaseDone();
+      setState(() => _message = '通信に失敗しました。もう一度「登録する」を押してください');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
-  /// Django側で失敗しても、Firebaseのアカウントは残っているため、次の押下で作成を飛ばす
-  void _markFirebaseDone() {
-    if (FirebaseAuth.instance.currentUser != null && !widget.alreadySignedIn) {
-      Navigator.of(context).pushReplacement(MaterialPageRoute(
-        builder: (_) => const RegisterPage(alreadySignedIn: true),
-      ));
-    }
-  }
-
-  String _firebaseMessage(String code) {
-    switch (code) {
-      case 'email-already-in-use': return 'このメールアドレスはすでに登録されています';
-      case 'weak-password': return 'パスワードは6文字以上にしてください';
-      case 'invalid-email': return 'メールアドレスの形式が正しくありません';
-      default: return '登録に失敗しました($code)';
-    }
+  void _showFirebaseError(String code) {
+    setState(() {
+      switch (code) {
+        case 'email-already-in-use':
+          _emailError = 'このメールアドレスはすでに登録されています';
+          break;
+        case 'invalid-email':
+          _emailError = 'メールアドレスの形式が正しくありません';
+          break;
+        case 'weak-password':
+          _passwordError = 'パスワードは6文字以上にしてください';
+          break;
+        default:
+          _message = '登録に失敗しました($code)';
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final signedIn = widget.alreadySignedIn;
-    return Scaffold(
-      appBar: AppBar(title: const Text('新規登録')),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 400),
-          child: ListView(
-            padding: const EdgeInsets.all(24),
-            shrinkWrap: true,
-            children: [
-              TextField(
-                controller: _name,
-                decoration: const InputDecoration(labelText: '表示名'),
-              ),
-              if (!signedIn) ...[
-                TextField(
-                  controller: _email,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(labelText: 'メールアドレス'),
-                ),
-                TextField(
-                  controller: _password,
-                  obscureText: true,
-                  decoration: const InputDecoration(labelText: 'パスワード'),
-                ),
-              ],
-              if (_error != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: Text(_error!, style: const TextStyle(color: Colors.red)),
-                ),
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: _loading ? null : _register,
-                child: _loading
-                    ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Text('新規登録'),
-              ),
-            ],
-          ),
+    return AuthShell(
+      showBack: true,
+      children: [
+        AuthTitle(
+          title: '新規登録',
+          sub: _firebaseDone
+              ? 'ユーザー名を決めてください'
+              : 'ユーザー名、メールアドレス、パスワードを決めてください',
         ),
-      ),
+        AuthField(
+          label: 'ユーザー名',
+          controller: _name,
+          error: _nameError,
+          textInputAction: TextInputAction.next,
+          onChanged: (_) => setState(() {
+            _nameError = null;
+            _message = null;
+          }),
+        ),
+        if (!_firebaseDone) ...[
+          AuthField(
+            label: 'メールアドレス',
+            controller: _email,
+            error: _emailError,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            onChanged: (_) => setState(() {
+              _emailError = null;
+              _message = null;
+            }),
+          ),
+          AuthField(
+            label: 'パスワード',
+            controller: _password,
+            error: _passwordError,
+            obscure: true,
+            textInputAction: TextInputAction.next,
+            onChanged: (_) => setState(() {
+              _passwordError = null;
+              _confirmError = null;
+              _message = null;
+            }),
+          ),
+          AuthField(
+            label: 'パスワード(確認)',
+            controller: _confirm,
+            error: _confirmError,
+            obscure: true,
+            textInputAction: TextInputAction.done,
+            onChanged: (_) => setState(() {
+              _confirmError = null;
+              _message = null;
+            }),
+            onSubmitted: (_) => _register(),
+          ),
+        ],
+        const SizedBox(height: 8),
+        AuthButton(label: '登録する', loading: _loading, onPressed: _register),
+        if (_message != null) AuthMessage(message: _message!),
+        AuthSwitch(
+          text: 'すでにアカウントをお持ちの方は',
+          linkLabel: 'ログイン',
+          onTap: _loading
+              ? null
+              : () => Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (_) => const LoginPage()),
+                  ),
+        ),
+      ],
     );
   }
 }

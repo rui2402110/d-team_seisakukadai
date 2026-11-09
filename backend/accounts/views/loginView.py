@@ -4,7 +4,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from accounts.models import User
 from core.firebase import verify_id_token
-
+import logging
+logger = logging.getLogger(__name__)
 
 @csrf_exempt
 @require_POST
@@ -16,6 +17,8 @@ def loginView(request):
     try:
         uid = verify_id_token(header[7:])["uid"]
     except Exception:
+        #
+        logger.exception("verify_id_token failed")
         return JsonResponse({"error": "invalid_token"}, status=401)
 
     user = User.objects.filter(firebase_uid=uid).first()

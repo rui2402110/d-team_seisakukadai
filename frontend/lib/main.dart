@@ -2,8 +2,13 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 import 'auth/page/auth_page.dart';
+<<<<<<< HEAD
 import 'firebase_options.dart'; // `flutterfire configure` で自動生成される あとでやってもらう
 import 'timeline/page/timeline_page.dart';
+=======
+import 'firebase_options.dart';
+import 'component/navbar.dart' show MyHomePage;
+>>>>>>> 6bf27de3681836ec9166a364e43e625b62f6090f
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

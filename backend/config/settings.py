@@ -79,12 +79,12 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-# データベースはpostgreSQLを利用すえうので設定もその通りにする
+# データベースはpostgreSQLを利用するので設定もその通りにする
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'kakko_db'),
-        'USER': os.environ.get('DB_USER', 'kakko_user'),
+        'NAME': os.environ.get('DB_NAME', 'sns_db'),
+        'USER': os.environ.get('DB_USER', 'sns_user'),
         'PASSWORD': os.environ.get('DB_PASSWORD', ''),
         'HOST': os.environ.get('DB_HOST', 'localhost'),
         'PORT': os.environ.get('DB_PORT', '5432'),
@@ -135,13 +135,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = "accounts.User"
 
 # S3移行時に "s3" に変える
-ICON_STORAGE = os.environ.get("ICON_STORAGE", "local")  
+ICON_STORAGE = os.environ.get("ICON_STORAGE", "local")
 AWS_S3_BUCKET = os.environ.get("AWS_S3_BUCKET", "")
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-# flutterのローカルホストの番地を許可
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5000",
-    "http://127.0.0.1:5000",
+# 受け取るポート番号
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^http://localhost:\d+$",
+    r"^http://127\.0\.0\.1:\d+$",
 ]
