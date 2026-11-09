@@ -135,7 +135,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = "accounts.User"
 
 # S3移行時に "s3" に変える
-ICON_STORAGE = os.environ.get("ICON_STORAGE", "local")  
+ICON_STORAGE = os.environ.get("ICON_STORAGE", "local")
 AWS_S3_BUCKET = os.environ.get("AWS_S3_BUCKET", "")
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
