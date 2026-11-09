@@ -1,0 +1,27 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "d-team-seisakukadai-2026",
+          "appId": "1:694337480140:android:869860f1ae16db2d0e6969",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "d-team-seisakukadai-2026",
+          "configurations": {
+            "android": "1:694337480140:android:869860f1ae16db2d0e6969",
+            "web": "1:694337480140:web:1cef59cda83f61950e6969"
+          }
+        }
+      }
+    }
+  },
+  "auth": {
+    "providers": {
+      "emailPassword": true
+    }
+  }
+}
