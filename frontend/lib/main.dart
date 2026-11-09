@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'auth/page/auth_page.dart';
 import 'firebase_options.dart'; // `flutterfire configure` で自動生成される あとでやってもらう
-import 'navbar.dart' show MyHomePage;
+import 'component/navbar.dart' show MyHomePage;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
