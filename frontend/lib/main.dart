@@ -2,7 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 import 'auth/page/auth_page.dart';
-import 'firebase_options.dart'; // `flutterfire configure` で自動生成される あとでやってもらう
+import 'firebase_options.dart';
 import 'component/navbar.dart' show MyHomePage;
 
 Future<void> main() async {

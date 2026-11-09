@@ -140,8 +140,8 @@ AWS_S3_BUCKET = os.environ.get("AWS_S3_BUCKET", "")
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-# flutterのローカルホストの番地を許可
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5000",
-    "http://127.0.0.1:5000",
+# 受け取るポート番号
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^http://localhost:\d+$",
+    r"^http://127\.0\.0\.1:\d+$",
 ]

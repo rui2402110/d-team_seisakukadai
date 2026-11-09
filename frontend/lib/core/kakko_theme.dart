@@ -15,7 +15,7 @@ class KakkoColors {
   static const errorFill = Color(0x2ED46A5A);
 }
 
-/// デモと同じダークブラウンのテーマ(今は認証画面だけに適用)
+/// デモと同じダークブラウンのテーマ
 ThemeData kakkoTheme() {
   final base = ThemeData(brightness: Brightness.dark, useMaterial3: true);
   return base.copyWith(
