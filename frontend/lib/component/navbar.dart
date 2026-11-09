@@ -45,12 +45,6 @@ class _MyHomePageState extends State<MyHomePage> {
     ),
     const Center(
       child: Text(
-        '設定画面',
-        style: TextStyle(fontSize: 24),
-      ),
-    ),
-    const Center(
-      child: Text(
         '作品画面',
         style: TextStyle(fontSize: 24),
       ),
@@ -67,6 +61,12 @@ class _MyHomePageState extends State<MyHomePage> {
         style: TextStyle(fontSize: 24),
       ),
     ),
+    const Center(
+      child: Text(
+        '設定画面',
+        style: TextStyle(fontSize: 24),
+      ),
+    ),
   ];
 
   @override
@@ -75,6 +75,7 @@ class _MyHomePageState extends State<MyHomePage> {
       body: Row(
         children: [
           NavigationRail(
+            // minWidth: 56.0, 
             extended: true,
             selectedIndex: _selectedIndex >= 0
               ? _selectedIndex
@@ -106,11 +107,6 @@ class _MyHomePageState extends State<MyHomePage> {
                 label: Text('検索'),
               ),
               NavigationRailDestination(
-                icon: Icon(Icons.settings),
-                selectedIcon: Icon(Icons.settings),
-                label: Text('設定'),
-              ),
-              NavigationRailDestination(
                 icon: Icon(Icons.menu_book),
                 selectedIcon: Icon(Icons.menu_book),
                 label: Text('作品'),
@@ -124,6 +120,11 @@ class _MyHomePageState extends State<MyHomePage> {
                 icon: Icon(Icons.notifications_none),
                 selectedIcon: Icon(Icons.notifications),
                 label: Text('通知'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.settings),
+                selectedIcon: Icon(Icons.settings),
+                label: Text('設定'),
               ),
             ],
             trailing: Expanded(
