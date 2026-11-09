@@ -79,12 +79,12 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-# データベースはpostgreSQLを利用すえうので設定もその通りにする
+# データベースはpostgreSQLを利用するので設定もその通りにする
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'kakko_db'),
-        'USER': os.environ.get('DB_USER', 'kakko_user'),
+        'NAME': os.environ.get('DB_NAME', 'user_db'),
+        'USER': os.environ.get('DB_USER', 'user_user'),
         'PASSWORD': os.environ.get('DB_PASSWORD', ''),
         'HOST': os.environ.get('DB_HOST', 'localhost'),
         'PORT': os.environ.get('DB_PORT', '5432'),
