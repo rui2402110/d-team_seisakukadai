@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'auth/page/auth_page.dart';
 import 'firebase_options.dart'; // `flutterfire configure` で自動生成される あとでやってもらう
-import 'timeline/page/timeline_page.dart';
+import 'component/navbar.dart';
 
 
 Future<void> main() async {
@@ -27,7 +27,7 @@ class KakkoApp extends StatelessWidget {
       ),
       home: const AuthPage(), // 最初の画面はログイン
       routes: {
-        '/timeline': (_) => const Timeline(), // ナビゲーション付きのメイン画面
+        '/timeline': (_) => const Navbar(), // ナビゲーション付きのメイン画面
       },
     );
   }

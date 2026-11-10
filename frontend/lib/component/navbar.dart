@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../timeline/page/timeline_page.dart';
 import '../../search.dart';
 import '../../work.dart';
@@ -9,80 +10,119 @@ import '../profile.dart';
 
 class Navbar extends StatefulWidget {
   const Navbar({super.key});
+
   @override
   State<Navbar> createState() => _NavbarState();
 }
 
 class _NavbarState extends State<Navbar> {
   int? selectedIndex ;
+  bool profile = false;
 
-  List<Map<String, dynamic>> navList = [
+  final List<Map<String, dynamic>> navList = [
     {
       "label": "タイムライン",
       "icon": Icons.notes,
-      "page": Timeline(),
     },
     {
       "label": "検索",
       "icon": Icons.search,
-      "page": Search(),
     },
     {
       "label": "作品",
       "icon": Icons.menu_book,
-      "page": Work(),
     },
     {
       "label": "コミュニティ",
       "icon": Icons.people,
-      "page": Community(),
     },
     {
       "label": "通知",
       "icon": Icons.notifications,
-      "page": UserNotification(),
     },
     {
       "label": "設定",
       "icon": Icons.settings,
-      "page": Setting(),
     },
-    
   ];
+
+  Widget getCurrentPage() {
+    switch (selectedIndex) {
+      case 0:
+        return const Timeline();
+
+      case 1:
+        return Search();
+
+      case 2:
+        return Work();
+
+      case 3:
+        return Community();
+
+      case 4:
+        return UserNotification();
+
+      case 5:
+        return Setting();
+
+      default:
+        return const Timeline();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
+      body: Row(
         children: [
-          Padding(
-            padding: EdgeInsets.all(10),
-            child: Row(
+          SizedBox(
+            width: 260,
+            child: Column(
               children: [
-                SizedBox(width: 10,),
-                Image.asset('assets/images/orbit.png'),
-                Text(" Kakko.",style: TextStyle(fontSize: 24.0),),
-              ],
-            ),
-          ),
+                Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Row(
+                    children: [
+                      const SizedBox(width: 10),
+                      Image.asset(
+                        'assets/images/orbit.png',
+                        width: 40,
+                        height: 40,
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        "Kakko.",
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
-          for (int i = 0; i < navList.length; i++)
-            ListTile(
-              leading: Icon(navList[i]["icon"]),
-              title: Text(navList[i]["label"]),
-              selected: selectedIndex == i,
-              onTap: () {
-                setState(() {
-                  selectedIndex = i;
-                  navList[i]["page"];
-                });
-              },
-            ),
-            Expanded(
-              child: Align(
-                alignment: Alignment.bottomLeft,
-                child: SizedBox(
-                  width: 200,
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: navList.length,
+                    itemBuilder: (context, index) {
+                      return ListTile(
+                        leading: Icon(navList[index]["icon"]),
+                        title: Text(navList[index]["label"]),
+                        selected: selectedIndex == index,
+                        onTap: () {
+                          setState(() {
+                            selectedIndex = index;
+                            profile = false;
+                          });
+                        },
+                      );
+                    },
+                  ),
+                ),
+
+                SizedBox(
+                  width: double.infinity,
                   child: ListTile(
                     leading: const CircleAvatar(
                       radius: 20,
@@ -95,15 +135,23 @@ class _NavbarState extends State<Navbar> {
                     onTap: () {
                       setState(() {
                         selectedIndex = null;
-                        Profile();
+                        profile = true;
                       });
                     },
                   ),
                 ),
-              ),
+              ],
             ),
+          ),
+
+          const VerticalDivider(width: 1),
+
+          Expanded(
+            child: profile
+            ? Profile()
+            : getCurrentPage()
+          ),
         ],
-        
       ),
     );
   }
