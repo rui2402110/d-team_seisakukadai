@@ -1,135 +1,86 @@
 import 'package:flutter/material.dart';
 import '../timeline/page/timeline_page.dart';
+import '../../search.dart';
+import '../../work.dart';
+import '../../community.dart';
+import '../../notification.dart';
+import '../../setting.dart';
 import '../profile.dart';
 
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
+class Navbar extends StatefulWidget {
+  const Navbar({super.key});
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'NavigationRail Sample',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Color.fromRGBO(43, 32, 22, 1),
-        ),
-      ),
-      home: const MyHomePage(),
-    );
-  }
+  State<Navbar> createState() => _NavbarState();
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
+class _NavbarState extends State<Navbar> {
+  int? selectedIndex ;
 
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _selectedIndex = 0 ;
-  bool _showProfile = false;
-
-  final List<Widget> _pages = [
-    Timeline(),
-    const Center(
-      child: Text(
-        '検索画面',
-        style: TextStyle(fontSize: 24),
-      ),
-    ),
-    const Center(
-      child: Text(
-        '作品画面',
-        style: TextStyle(fontSize: 24),
-      ),
-    ),
-    const Center(
-      child: Text(
-        'コミュニティ画面',
-        style: TextStyle(fontSize: 24),
-      ),
-    ),
-    const Center(
-      child: Text(
-        '通知画面',
-        style: TextStyle(fontSize: 24),
-      ),
-    ),
-    const Center(
-      child: Text(
-        '設定画面',
-        style: TextStyle(fontSize: 24),
-      ),
-    ),
+  List<Map<String, dynamic>> navList = [
+    {
+      "label": "タイムライン",
+      "icon": Icons.notes,
+      "page": Timeline(),
+    },
+    {
+      "label": "検索",
+      "icon": Icons.search,
+      "page": Search(),
+    },
+    {
+      "label": "作品",
+      "icon": Icons.menu_book,
+      "page": Work(),
+    },
+    {
+      "label": "コミュニティ",
+      "icon": Icons.people,
+      "page": Community(),
+    },
+    {
+      "label": "通知",
+      "icon": Icons.notifications,
+      "page": UserNotification(),
+    },
+    {
+      "label": "設定",
+      "icon": Icons.settings,
+      "page": Setting(),
+    },
+    
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Row(
+      body: Column(
         children: [
-          NavigationRail(
-            // minWidth: 56.0, 
-            extended: true,
-            selectedIndex: _selectedIndex >= 0
-              ? _selectedIndex
-              : null,
-            onDestinationSelected: (int index) {
-              setState(() {
-                _showProfile = false;
-                _selectedIndex = index;
-              });
-            },
-            leading: SizedBox(
-              width: 200,
-              child: Row(
-                children: [
-                  Image.asset('assets/images/orbit.png'),
-                  Text(" Kakko.",style: TextStyle(fontSize: 24.0),),
-                ],
-              ),
+          Padding(
+            padding: EdgeInsets.all(10),
+            child: Row(
+              children: [
+                SizedBox(width: 10,),
+                Image.asset('assets/images/orbit.png'),
+                Text(" Kakko.",style: TextStyle(fontSize: 24.0),),
+              ],
             ),
-            destinations: const [
-              NavigationRailDestination(
-                icon: Icon(Icons.notes),
-                selectedIcon: Icon(Icons.notes),
-                label: Text('タイムライン'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.search),
-                selectedIcon: Icon(Icons.search),
-                label: Text('検索'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.menu_book),
-                selectedIcon: Icon(Icons.menu_book),
-                label: Text('作品'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.people_outline),
-                selectedIcon: Icon(Icons.people),
-                label: Text('コミュニティ'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.notifications_none),
-                selectedIcon: Icon(Icons.notifications),
-                label: Text('通知'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.settings),
-                selectedIcon: Icon(Icons.settings),
-                label: Text('設定'),
-              ),
-            ],
-            trailing: Expanded(
+          ),
+
+          for (int i = 0; i < navList.length; i++)
+            ListTile(
+              leading: Icon(navList[i]["icon"]),
+              title: Text(navList[i]["label"]),
+              selected: selectedIndex == i,
+              onTap: () {
+                setState(() {
+                  selectedIndex = i;
+                  navList[i]["page"];
+                });
+              },
+            ),
+            Expanded(
               child: Align(
-                alignment: Alignment.bottomCenter,
+                alignment: Alignment.bottomLeft,
                 child: SizedBox(
                   width: 200,
                   child: ListTile(
@@ -143,24 +94,16 @@ class _MyHomePageState extends State<MyHomePage> {
                     subtitle: const Text('@user'),
                     onTap: () {
                       setState(() {
-                        _showProfile = true;
-                        _selectedIndex= -1;
+                        selectedIndex = null;
+                        Profile();
                       });
                     },
                   ),
                 ),
               ),
             ),
-          ),
-
-          const VerticalDivider(width: 1),
-
-          Expanded(
-            child: _showProfile
-                ? Profile()
-                : _pages[_selectedIndex],
-          ),
         ],
+        
       ),
     );
   }
