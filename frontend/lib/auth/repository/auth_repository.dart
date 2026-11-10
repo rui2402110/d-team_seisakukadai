@@ -2,7 +2,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-// Exceptionクラス
+// DjangoのExceptionクラス
 class ApiException implements Exception {
   final String message;
   ApiException(this.message);
