@@ -17,10 +17,13 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
+  // 初期値を設定
   final _name = TextEditingController();
   final _email = TextEditingController();
   final _password = TextEditingController();
   final _confirm = TextEditingController();
+
+  // DjangoのAPIへ通信するリポジトリ
   final _repo = AuthRepository();
 
   bool _loading = false;
@@ -31,12 +34,15 @@ class _RegisterPageState extends State<RegisterPage> {
   String? _confirmError;
   String? _message;
 
+  // 初期化関数
   @override
   void initState() {
     super.initState();
+    // 外部から「alreadySignedIn: true」で呼ばれた場合は、最初からFirebase作成済み扱いに
     _firebaseDone = widget.alreadySignedIn;
   }
 
+  // メモリリークを起こさないように破棄
   @override
   void dispose() {
     _name.dispose();
@@ -82,6 +88,7 @@ class _RegisterPageState extends State<RegisterPage> {
         confirmError == null;
   }
 
+  // 登録ボタンが押されたときの処理
   Future<void> _register() async {
     if (!_validate()) return;
 
@@ -99,16 +106,19 @@ class _RegisterPageState extends State<RegisterPage> {
         user = cred.user;
         _firebaseDone = true;
       }
-
+      // ログイン中ユーザーのidトークンをfirebaseサーバーから取得
       final token = await user!.getIdToken();
-      await _repo.register(token!, _name.text.trim()); // Django: ユーザーDBに作成
-
+      // 取得したトークンとユーザー名をDjangoのAPIに送り、PostgreSQLにデータを保存
+      await _repo.register(token!, _name.text.trim()); 
+      // ここで画面が存在していない場合return
       if (!mounted) return;
+      // タイムライン画面へ遷移
       Navigator.of(context).pushNamedAndRemoveUntil('/timeline', (_) => false);
     } on FirebaseAuthException catch (e) {
       _showFirebaseError(e.code);
     } on ApiException catch (e) {
-      // Firebaseは作成済み。もう一度押せば、register だけが再実行される
+      // Djangoのエラー
+      // Firebaseは作成済みなので、もう一度押せばサーバー登録（_repo.register）だけが再実行される
       setState(() => _message = '${e.message}。もう一度「登録する」を押してください');
     } catch (_) {
       setState(() => _message = '通信に失敗しました。もう一度「登録する」を押してください');

@@ -14,6 +14,7 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  // 初期値を設定（プライベート）
   final _email = TextEditingController();
   final _password = TextEditingController();
   final _repo = AuthRepository();
@@ -24,13 +25,14 @@ class _LoginPageState extends State<LoginPage> {
   // サーバーやFirebaseからのエラー
   String? _message; 
 
+  // メモリリークを起こさないように使った後に破棄
   @override
   void dispose() {
     _email.dispose();
     _password.dispose();
     super.dispose();
   }
-
+  // 入力欄からテキストを取得
   Future<void> _login() async {
     final email = _email.text.trim();
     final password = _password.text;
@@ -41,18 +43,26 @@ class _LoginPageState extends State<LoginPage> {
       _passwordError = password.isEmpty ? 'パスワードを入力してください' : null;
       _message = null;
     });
+    // 空欄がある場合は、ここでログイン処理をストップ
     if (email.isEmpty || password.isEmpty) return;
 
+    // 画面を再描画
     setState(() => _loading = true);
+    // メールとパスワードでログインを行う
     try {
       final cred = await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
+      // 認証成功したらIDトークンを取得する
       final token = await cred.user!.getIdToken();
+      // 取得したトークンをDjangoのAPIに送り、PostgreSQLにもユーザー登録されているか確認する
       final registered = await _repo.login(token!);
+      // ここまでで画面がなかったらリターン
       if (!mounted) return;
+
       if (registered) {
+        // DjangoのAPIでPostgreSQLにもユーザー登録されていることが分かった場合、タイムライン画面へ遷移する
         Navigator.of(context)
             .pushNamedAndRemoveUntil('/timeline', (_) => false);
       } else {

@@ -25,6 +25,7 @@ class AuthPage extends StatelessWidget {
         const SizedBox(height: 26),
         AuthButton(
           label: 'ログイン',
+          // ログイン画面へ遷移
           onPressed: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const LoginPage()),
           ),
@@ -33,6 +34,7 @@ class AuthPage extends StatelessWidget {
         AuthButton(
           label: '新規登録',
           primary: false,
+          // 新規登録画面へ遷移
           onPressed: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const RegisterPage()),
           ),

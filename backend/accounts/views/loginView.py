@@ -17,7 +17,7 @@ def loginView(request):
     try:
         uid = verify_id_token(header[7:])["uid"]
     except Exception:
-        #
+        # どの部分でエラーが出ているかのチェックをログに流す
         logger.exception("verify_id_token failed")
         return JsonResponse({"error": "invalid_token"}, status=401)
 
