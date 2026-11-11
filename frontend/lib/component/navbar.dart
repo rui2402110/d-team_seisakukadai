@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../timeline/page/timeline_page.dart';
 import '../../search.dart';
-import '../../work.dart';
+import '../work/page/work_menu.dart';
 import '../../community.dart';
 import '../../notification.dart';
 import '../../setting.dart';
