@@ -6,10 +6,10 @@ class Work(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="works")
     title = models.CharField(max_length=50)
 
-    class WorkType(models.Model):
-        CHAR = 1,"文字"
-        CHAR = 2,"画像"
-        CHAR = 3,"動画"
+    class WorkType(models.IntegerChoices):
+        char = 1,"文字"
+        image = 2,"画像"
+        movie = 3,"動画"
     work_type = models.PositiveBigIntegerField(choices=WorkType.choices)
     work_detail = models.TextField(default="")
     created_at = models.DateTimeField(auto_now_add=True) 
@@ -33,5 +33,5 @@ class Work_relation(models.Model):
 
 class Work_like(models.Model):
     work = models.ForeignKey(Work, on_delete=models.CASCADE, related_name="like")
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="works")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="work_likes")
     liked_at = models.DateTimeField(auto_now_add=True)
