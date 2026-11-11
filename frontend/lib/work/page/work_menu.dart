@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 
 class Work extends StatelessWidget {
-  
+
   const Work({super.key});
 
   static const Color bg = Color(0xFF2D2016);
@@ -16,102 +16,9 @@ class Work extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bg,
-      body: Row(
+      body: Column(
         children: [
-          // 左側サイドバー
-          Container(
-            width: 172,
-            decoration: const BoxDecoration(
-              color: sidebar,
-              border: Border(
-                right: BorderSide(color: Color(0xFF493729)),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(17, 17, 10, 17),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.nightlight_round,
-                        color: orange,
-                        size: 15,
-                      ),
-                      SizedBox(width: 7),
-                      Text(
-                        'kakko.',
-                        style: TextStyle(
-                          color: mainText,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
 
-                _menu(Icons.menu, 'タイムライン'),
-                _menu(Icons.search, '検索'),
-                _menu(Icons.sunny, '設定'),
-                _menu(
-                  Icons.auto_stories_outlined,
-                  '作品',
-                  selected: true,
-                ),
-                _menu(Icons.people_outline, 'コミュニティ'),
-                _menu(
-                  Icons.notifications_none,
-                  '通知',
-                  notification: true,
-                ),
-
-                const Spacer(),
-
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      const CircleAvatar(
-                        radius: 12,
-                        backgroundColor: orange,
-                        child: Text(
-                          'あ',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 9),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'あなた',
-                            style: TextStyle(
-                              color: mainText,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            'プロフィール',
-                            style: TextStyle(
-                              color: subText,
-                              fontSize: 10,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
 
           // 右側メイン画面
           Expanded(
