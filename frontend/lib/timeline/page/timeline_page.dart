@@ -35,7 +35,8 @@ class _TimelineState extends State<Timeline> {
   List<Map<String, dynamic>> community = [
     {
       "comId":1,
-      "comName":"灰と星屑 感想部"
+      "comName":"灰と星屑 感想部",
+      "icon":""
     },{
       "comId":2,
       "comName":"夜想曲のリベルタを語る会"
@@ -158,8 +159,29 @@ class _TimelineState extends State<Timeline> {
       "createdAt":"2026-11-10 11:00:00.000",
     },
   ];
-  List<Map<String, dynamic>> likes = [
-    {"postId":1}
+  List<Map<String, dynamic>> postLikes = [
+    { //いいねした投稿とユーザー
+      "userId":6,
+      "postId":1
+    },{
+      "userId":6,
+      "postId":5
+    }
+  ];
+  List<Map<String, dynamic>> follow =[
+    {
+      "id":1,
+      "follow":6, //フォローするユーザー
+      "following":1 //フォローされるユーザー
+    },{
+      "id":1,
+      "follow":6, 
+      "following":2
+    },{
+      "id":1,
+      "follow":6, 
+      "following":4
+    },
   ];
 
   @override
@@ -167,20 +189,6 @@ class _TimelineState extends State<Timeline> {
     return Scaffold(
       body: Column(
         children: [
-          // Expanded(
-          //   child: contents.isNotEmpty
-          //     ? ListView(
-          //         children: contents.map((doc) {
-          //           return ListTile(
-          //             title: Text(doc['name'] ?? ''),
-          //             subtitle: Text(doc['text'] ?? ''),
-          //           );
-          //         }).toList(),
-          //       )
-          //     : const Center( 
-          //         child: Text("投稿がありません"),
-          //       ),
-          // ),
 
         ],
       ),
