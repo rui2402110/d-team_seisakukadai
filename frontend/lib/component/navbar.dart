@@ -37,12 +37,12 @@ class _NavbarState extends State<Navbar> {
       "icon": Icons.people,
     },
     {
-      "label": "通知",
-      "icon": Icons.notifications,
-    },
-    {
       "label": "設定",
       "icon": Icons.settings,
+    },
+    {
+      "label": "通知",
+      "icon": Icons.notifications,
     },
   ];
 
@@ -61,10 +61,10 @@ class _NavbarState extends State<Navbar> {
         return Community();
 
       case 4:
-        return UserNotification();
+        return Setting();
 
       case 5:
-        return Setting();
+        return UserNotification();
 
       default:
         return const Timeline();
@@ -106,17 +106,33 @@ class _NavbarState extends State<Navbar> {
                   child: ListView.builder(
                     itemCount: navList.length,
                     itemBuilder: (context, index) {
-                      return ListTile(
-                        leading: Icon(navList[index]["icon"]),
-                        title: Text(navList[index]["label"]),
-                        selected: selectedIndex == index,
-                        onTap: () {
-                          setState(() {
-                            selectedIndex = index;
-                            profile = false;
-                          });
-                        },
-                      );
+                      return navList[index]["label"]!="通知"
+                      ?ListTile(
+                          leading: Icon(navList[index]["icon"]),
+                          title: Text(navList[index]["label"]),
+                          selected: selectedIndex == index,
+                          onTap: () {
+                            setState(() {
+                              selectedIndex = index;
+                              profile = false;
+                            });
+                          },
+                        )
+                      :ListTile(
+                          leading: Badge(
+                            label: Text('99+'), // 表示する数字やテキスト
+                            isLabelVisible: true, // 表示・非表示の切り替え
+                            child: Icon(navList[index]["icon"]),
+                          ),
+                          title: Text(navList[index]["label"]),
+                          selected: selectedIndex == index,
+                          onTap: () {
+                            setState(() {
+                              selectedIndex = index;
+                              profile = false;
+                            });
+                          },
+                        );
                     },
                   ),
                 ),
