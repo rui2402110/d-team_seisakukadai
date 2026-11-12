@@ -20,11 +20,11 @@ class Work_image(models.Model):
     image_number = models.PositiveBigIntegerField()
 
 class Work_char(models.Model):
-    work = models.ForeignKey(Work, on_delete=models.CASCADE, related_name="char")
+    work = models.OneToOneField(Work, on_delete=models.CASCADE, related_name="char")
     main = models.TextField(default="")
 
 class Work_movie(models.Model):
-    work = models.ForeignKey(Work, on_delete=models.CASCADE, related_name="movie")
+    work = models.OneToOneField(Work, on_delete=models.CASCADE, related_name="movie")
     main = models.CharField(max_length=1000)
 
 class Work_relation(models.Model):
