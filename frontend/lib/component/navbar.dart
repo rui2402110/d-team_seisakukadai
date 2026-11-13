@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../timeline/page/timeline_page.dart';
 import '../../search.dart';
 import '../work/page/work_menu.dart';
-import '../../community.dart';
+import '../community/page/community_menu_page.dart';
 import '../../notification.dart';
 import '../../setting.dart';
 import '../profile.dart';
@@ -58,7 +58,7 @@ class _NavbarState extends State<Navbar> {
         return Work();
 
       case 3:
-        return Community();
+        return CommunityMenuPage();
 
       case 4:
         return Setting();
