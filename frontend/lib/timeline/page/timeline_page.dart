@@ -288,7 +288,15 @@ class _TimelineState extends State<Timeline>
                               Row(
                                 spacing: 10,
                                 children: [
-                                  ElevatedButton(onPressed: (){print("キャンセル");}, child: Text("キャンセル")),
+                                  ElevatedButton(
+                                    onPressed: (){
+                                      FocusManager.instance.primaryFocus?.unfocus();
+                                      setState(() {
+                                        icons = false;
+                                      });
+                                      print("キャンセル");
+                                    }, 
+                                    child: Text("キャンセル")),
                                   ElevatedButton(
                                     onPressed: (){
                                       if(_postController.text.isNotEmpty)
