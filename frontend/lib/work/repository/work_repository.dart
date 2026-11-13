@@ -23,7 +23,7 @@ class WorkRepository {
 
     // Djangoの作品一覧APIにGETリクエストを送信する
     final res = await http.get(
-      Uri.parse('$_baseUrl/work/menu/'),
+      Uri.parse('$_baseUrl/work/workmenu/'),
       headers: _headers(idToken),
     );
 
