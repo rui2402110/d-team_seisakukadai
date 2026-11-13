@@ -1,0 +1,236 @@
+[
+  {
+    "model": "community.communitymember",
+    "pk": 1,
+    "fields": {
+      "community": 1,
+      "user": 1
+    }
+  },
+  {
+    "model": "community.communitymember",
+    "pk": 2,
+    "fields": {
+      "community": 1,
+      "user": 4
+    }
+  },
+  {
+    "model": "community.communitymember",
+    "pk": 3,
+    "fields": {
+      "community": 1,
+      "user": 6
+    }
+  },
+  {
+    "model": "community.communitymember",
+    "pk": 4,
+    "fields": {
+      "community": 3,
+      "user": 3
+    }
+  },
+  {
+    "model": "community.communitymember",
+    "pk": 5,
+    "fields": {
+      "community": 3,
+      "user": 6
+    }
+  },
+  {
+    "model": "timeline.post",
+    "pk": 1,
+    "fields": {
+      "user": 1,
+      "community": 1,
+      "post": "積読解消するぞの意気込みで開いた『夜想曲のリベルタ』1巻、もう心を持っていかれた…",
+      "reply": 0,
+      "like": 18,
+      "replyCount": 2,
+      "createdAt": "2026-11-10T11:50:00+09:00"
+    }
+  },
+  {
+    "model": "timeline.post",
+    "pk": 2,
+    "fields": {
+      "user": 4,
+      "community": 1,
+      "post": "わかる、あそこで声出た",
+      "reply": 1,
+      "like": 0,
+      "replyCount": 0,
+      "createdAt": "2026-11-10T11:58:00+09:00"
+    }
+  },
+  {
+    "model": "timeline.post",
+    "pk": 3,
+    "fields": {
+      "user": 3,
+      "community": 1,
+      "post": "伏線、１巻からあったんですね…読み返します",
+      "reply": 1,
+      "like": 0,
+      "replyCount": 0,
+      "createdAt": "2026-11-10T11:59:00+09:00"
+    }
+  },
+  {
+    "model": "timeline.post",
+    "pk": 4,
+    "fields": {
+      "user": 2,
+      "community": 2,
+      "post": "え、あの二人がまさかの再開…？！ここからどう転がるのか全く読めない",
+      "reply": 0,
+      "like": 9,
+      "replyCount": 0,
+      "createdAt": "2026-11-10T11:35:00+09:00"
+    }
+  },
+  {
+    "model": "timeline.post",
+    "pk": 5,
+    "fields": {
+      "user": 3,
+      "community": 3,
+      "post": "3話の演出、完全に映画だった…円盤絶対買う。",
+      "reply": 0,
+      "like": 40,
+      "replyCount": 2,
+      "createdAt": "2026-11-10T11:20:00+09:00"
+    }
+  },
+  {
+    "model": "timeline.post",
+    "pk": 6,
+    "fields": {
+      "user": 2,
+      "community": 3,
+      "post": "わかります、毎週OPだけで満足してます",
+      "reply": 5,
+      "like": 0,
+      "replyCount": 0,
+      "createdAt": "2026-11-10T11:20:00+09:00"
+    }
+  },
+  {
+    "model": "timeline.post",
+    "pk": 7,
+    "fields": {
+      "user": 5,
+      "community": 3,
+      "post": "作画担当、他の作品も調べたくなりました",
+      "reply": 5,
+      "like": 0,
+      "replyCount": 0,
+      "createdAt": "2026-11-10T11:40:00+09:00"
+    }
+  },
+  {
+    "model": "timeline.post",
+    "pk": 8,
+    "fields": {
+      "user": 4,
+      "community": 1,
+      "post": "このコマの構図がとにかく好き。原作の静けさがそのまま絵になってる。",
+      "reply": 0,
+      "like": 52,
+      "replyCount": 1,
+      "createdAt": "2026-11-10T11:00:00+09:00"
+    }
+  },
+  {
+    "model": "timeline.post",
+    "pk": 9,
+    "fields": {
+      "user": 1,
+      "community": 1,
+      "post": "このコマ本当に綺麗ですよね",
+      "reply": 8,
+      "like": 0,
+      "replyCount": 0,
+      "createdAt": "2026-11-10T11:10:00+09:00"
+    }
+  },
+  {
+    "model": "timeline.post",
+    "pk": 10,
+    "fields": {
+      "user": 1,
+      "community": 1,
+      "post": "最終話の展開、完全に予想を裏切られた…あの１行で全部ひっくり返るとは思わなかった。",
+      "reply": 0,
+      "like": 33,
+      "replyCount": 1,
+      "createdAt": "2026-11-10T10:00:00+09:00"
+    }
+  },
+  {
+    "model": "timeline.post",
+    "pk": 11,
+    "fields": {
+      "user": 4,
+      "community": 1,
+      "post": "まさかそんな結末になるとは…",
+      "reply": 10,
+      "like": 0,
+      "replyCount": 0,
+      "createdAt": "2026-11-10T11:00:00+09:00"
+    }
+  },
+  {
+    "model": "timeline.postmedia",
+    "pk": 1,
+    "fields": {
+      "post": 8,
+      "image": "https://placehold.jp/30/dd6699/ffffff/300x150.png?text=placeholder+image",
+      "imageNumber": 1
+    }
+  },
+  {
+    "model": "timeline.postlikes",
+    "pk": 1,
+    "fields": {
+      "post": 1,
+      "user": 6,
+      "createdAt": "2026-11-10T12:00:00+09:00"
+    }
+  },
+  {
+    "model": "timeline.postlikes",
+    "pk": 2,
+    "fields": {
+      "post": 5,
+      "user": 6,
+      "createdAt": "2026-11-10T12:00:00+09:00"
+    }
+  },
+  {
+    "model": "accounts.follow",
+    "pk": 1,
+    "fields": {
+      "user": 6,
+      "following": 1
+    }
+  },
+  {
+    "model": "accounts.follow",
+    "pk": 2,
+    "fields": {
+      "user": 6,
+      "following": 2
+    }
+  },
+  {
+    "model": "accounts.follow",
+    "pk": 3,
+    "fields": {
+      "user": 6,
+      "following": 4
+    }
+  }
+]
