@@ -8,8 +8,9 @@ class Timeline extends StatefulWidget {
   State<Timeline> createState() => _TimelineState();
 }
 //2026-11-10 12:00:00.000 固定時刻
-class _TimelineState extends State<Timeline> {
-  // 取得した内容を保持するリスト
+class _TimelineState extends State<Timeline> 
+  with SingleTickerProviderStateMixin {
+  // 取得した内容を保持するリスト-DB
   List<Map<String, dynamic>> user = [
     {
       "userId":1,
@@ -49,9 +50,6 @@ class _TimelineState extends State<Timeline> {
     {
       "comId":1,
       "userId":{1,4,6}
-    },{
-      "comId":2,
-      "userId":{2}
     },{
       "comId":3,
       "userId":{3,6}
@@ -183,16 +181,143 @@ class _TimelineState extends State<Timeline> {
       "following":4
     },
   ];
+  
+  //-------------------------------------------------
+  late final _tabController = TabController(
+    length: comMen.length + 1, //タブ数
+    vsync: this //アニメーション同期用
+    );
+  final _postController = TextEditingController();//投稿内容
+  bool icons = false;
+
+  Widget loadPost(){
+    return Text("ぽすとないよう");
+  }
+
+  @override
+  void dispose() {//リソース解放
+    _tabController.dispose();
+    _postController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Column(
-        children: [
-
-        ],
-      ),
-      
+    return Column(
+      children: [
+        TabBar(
+          controller: _tabController,
+          isScrollable: true,//タブのスクロール
+          tabs: [
+            Tab(text: "フォロー",),
+            ...comMen.map((menber){ // コミュニティ名を取得
+              final com = community.firstWhere(
+                (c) => c["comId"] == menber["comId"],
+              );
+              return Tab(text: com["comName"],);
+            })
+          ]
+        ),
+        Expanded(child: 
+          TabBarView(
+            controller: _tabController,
+            children: [
+              loadPost(),
+              ...comMen.map((menber){ 
+              final com = community.firstWhere(
+                (c) => c["comId"] == menber["comId"],
+              );
+              return 
+                Column(
+                  children: [
+                    Container(
+                      margin: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.black, width: 1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("${com["comName"]}に投稿します"),
+                          Row(
+                            spacing: 10,
+                            children: [
+                              CircleAvatar(
+                                radius: 20,
+                                backgroundImage: NetworkImage(
+                                  'https://picsum.photos/200/300',
+                                ),
+                              ),
+                              Expanded(
+                                child: TextField(
+                                  decoration: InputDecoration(
+                                    border: InputBorder.none,
+                                    hintText: "いま感じたことをシェアしよう"
+                                  ),
+                                  controller: _postController,
+                                  onTap: () { //入力下部表示
+                                    setState(() {
+                                      icons = true;
+                                    });
+                                  },
+                                  // onTapOutside: (PointerDownEvent event) {
+                                  //   // 入力欄の外側がタップされたときに入力下部を非表示
+                                  //   FocusManager.instance.primaryFocus?.unfocus();
+                                  //   setState(() {
+                                  //     icons = false;
+                                  //   });
+                                  // },
+                                ),
+                              ),
+                            ]
+                          ),
+                          if (icons)...{
+                            Divider(),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                              Row(
+                                spacing: 10,
+                                children: [
+                                IconButton(onPressed:(){print("写真添付おした");}, icon: Icon(Icons.image)),
+                                IconButton(onPressed:(){print("動画添付おした");}, icon: Icon(Icons.movie)),
+                                IconButton(onPressed:(){print("作品引用おした");}, icon: Icon(Icons.notes)),
+                              ],),
+                              Row(
+                                spacing: 10,
+                                children: [
+                                  ElevatedButton(
+                                    onPressed: (){
+                                      FocusManager.instance.primaryFocus?.unfocus();
+                                      setState(() {
+                                        icons = false;
+                                      });
+                                      print("キャンセル");
+                                    }, 
+                                    child: Text("キャンセル")),
+                                  ElevatedButton(
+                                    onPressed: (){
+                                      if(_postController.text.isNotEmpty)
+                                      print("投稿");
+                                      }, 
+                                    child: Text("投稿")),
+                              ],)
+                            ],),
+                            
+                          }
+                        ],
+                      ),
+                    ),
+                    loadPost(),
+                  ],
+                );
+            })
+            ],
+          ),
+        )
+      ]
     );
   }
 }
