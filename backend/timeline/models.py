@@ -6,7 +6,7 @@ from django.conf import settings
 # Create your models here.
 class Post(models.Model):
     # userid
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="post")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="posts")
     community = models.ForeignKey(Community, on_delete=models.CASCADE, related_name="posts")
     post = models.CharField(max_length=255,default="")
     reply = models.PositiveSmallIntegerField(default=0) 
@@ -23,7 +23,7 @@ class PostMedia(models.Model):
         return f"{self.post} - image {self.imageNumber}"
 
 class PostLikes(models.Model):
-    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="likes")
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="liked_posts")
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="post")
     createdAt = models.DateTimeField(auto_now_add=True)
 
