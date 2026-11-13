@@ -1,11 +1,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../repository/work_repository.dart';
 
-// ==========================================
-// 作品一覧画面
-// ==========================================
+import '../repository/work_repository.dart';
+import 'work_detail.dart';
+
 class Work extends StatefulWidget {
   const Work({super.key});
 
@@ -13,297 +12,291 @@ class Work extends StatefulWidget {
   State<Work> createState() => _WorkState();
 }
 
-// ==========================================
-// 画面の状態を管理するクラス
-// ==========================================
 class _WorkState extends State<Work> {
+  // ==============================
+  // 色の設定
+  // ==============================
 
-  // Djangoから取得した作品情報を保持する変数
-  late Future<Map<String, dynamic>> _workMenuFuture;
-
-  // 画面の色
   static const Color bg = Color(0xFF2D2016);
-  static const Color sidebar = Color(0xFF302116);
+  static const Color sidebar = Color(0xFF241910);
   static const Color card = Color(0xFF3A2A1B);
   static const Color orange = Color(0xFFE9782B);
   static const Color mainText = Color(0xFFE9D9C6);
   static const Color subText = Color(0xFFB5A18A);
+  static const Color line = Color(0xFF49382A);
 
-  // 作品カードの背景色
+  // 作品カードの色
   static const List<List<Color>> workColors = [
-    [Color(0xFFD87939), Color(0xFF74392B)],
-    [Color(0xFF858B5C), Color(0xFF49371F)],
-    [Color(0xFF607FAB), Color(0xFF29384E)],
+    [
+      Color(0xFF8A674C),
+      Color(0xFF493426),
+    ],
+    [
+      Color(0xFF667D83),
+      Color(0xFF293B42),
+    ],
+    [
+      Color(0xFF88735D),
+      Color(0xFF443326),
+    ],
   ];
 
-  // 画面が最初に作られたときに実行する
+  // ==============================
+  // APIから作品データを取得
+  // ==============================
+
+  late Future<Map<String, dynamic>> _workMenuFuture;
+
   @override
   void initState() {
     super.initState();
 
-    // Djangoから作品情報を取得する
+    // 画面表示時に作品データを取得
     _workMenuFuture = _loadWorkMenu();
   }
 
-  // ==========================================
-  // Djangoから作品情報を取得
-  // ==========================================
   Future<Map<String, dynamic>> _loadWorkMenu() async {
-
-    // Firebaseにログインしているユーザーを取得
+    // ログイン中のユーザーを取得
     final user = FirebaseAuth.instance.currentUser;
 
-    // ログインしていない場合はエラー
     if (user == null) {
       throw Exception('ログインしていません');
     }
 
-    // FirebaseのIDトークンを取得
+    // Firebase IDトークンを取得
     final idToken = await user.getIdToken();
 
     if (idToken == null) {
       throw Exception('認証トークンを取得できませんでした');
     }
 
-    // Djangoと通信するRepositoryを作成
-    final repository = WorkRepository();
-
-    // Djangoから作品情報を取得
-    final result = await repository.getWorkMenu(idToken);
+    // Django APIから作品一覧を取得
+    final result = await WorkRepository().getWorkMenu(idToken);
 
     return result;
   }
 
-  // ==========================================
-  // 画面の表示
-  // ==========================================
+  // ==============================
+  // 画面全体
+  // ==============================
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bg,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // ヘッダー
+            _buildHeader(),
 
-      body: Column(
-        children: [
+            // 検索欄
+            _buildSearch(),
 
-          // ヘッダー
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(16, 17, 16, 20),
-            decoration: const BoxDecoration(
-              border: Border(
-                bottom: BorderSide(
-                  color: Color(0xFF493729),
-                ),
+            // 作品投稿・マイ作品
+            _buildActionMenu(),
+
+            // カテゴリー
+            _buildCategory(),
+
+            // 作品一覧
+            Expanded(
+              child: FutureBuilder<Map<String, dynamic>>(
+                future: _workMenuFuture,
+
+                builder: (context, snapshot) {
+                  // 読み込み中
+                  if (snapshot.connectionState ==
+                      ConnectionState.waiting) {
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        color: orange,
+                      ),
+                    );
+                  }
+
+                  // エラー
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            color: orange,
+                            size: 40,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            '作品の取得に失敗しました\n${snapshot.error}',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: mainText,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () {
+                              setState(() {
+                                _workMenuFuture = _loadWorkMenu();
+                              });
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: orange,
+                              foregroundColor: bg,
+                            ),
+                            child: const Text('再読み込み'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  // データが存在しない場合
+                  if (!snapshot.hasData) {
+                    return const Center(
+                      child: Text(
+                        '作品がありません',
+                        style: TextStyle(color: subText),
+                      ),
+                    );
+                  }
+
+                  // APIから取得したデータ
+                  final result = snapshot.data!;
+
+                  final followWorks =
+                      List<dynamic>.from(result['follow'] ?? []);
+
+                  final recommendWorks =
+                      List<dynamic>.from(result['recommend'] ?? []);
+
+                  return ListView(
+                    padding: const EdgeInsets.only(
+                      bottom: 30,
+                    ),
+                    children: [
+                      // フォロー作品
+                      _buildWorkSection(
+                        'フォロー作品',
+                        followWorks,
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // おすすめ作品
+                      _buildWorkSection(
+                        'おすすめ作品',
+                        recommendWorks,
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '作品',
-                  style: TextStyle(
-                    color: mainText,
-                    fontSize: 21,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '好きな作品を投稿したり、見つけたりしよう',
-                  style: TextStyle(
-                    color: subText,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ==============================
+  // ヘッダー
+  // ==============================
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 20,
+        vertical: 16,
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.menu_book,
+            color: orange,
+            size: 28,
+          ),
+          const SizedBox(width: 10),
+          const Text(
+            '作品',
+            style: TextStyle(
+              color: mainText,
+              fontSize: 23,
+              fontWeight: FontWeight.bold,
             ),
           ),
+          const Spacer(),
+          const Icon(
+            Icons.notifications_none,
+            color: mainText,
+            size: 25,
+          ),
+        ],
+      ),
+    );
+  }
 
-          // メインコンテンツ
+  // ==============================
+  // 検索欄
+  // ==============================
+
+  Widget _buildSearch() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 18,
+        vertical: 8,
+      ),
+      child: TextField(
+        style: const TextStyle(color: mainText),
+        decoration: InputDecoration(
+          hintText: '作品名やあらすじで検索（デモ）',
+          hintStyle: const TextStyle(
+            color: subText,
+            fontSize: 13,
+          ),
+          prefixIcon: const Icon(
+            Icons.search,
+            color: subText,
+          ),
+          filled: true,
+          fillColor: card,
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 13,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ==============================
+  // マイ作品・作品投稿メニュー
+  // ==============================
+
+  Widget _buildActionMenu() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 18,
+        vertical: 10,
+      ),
+      child: Row(
+        children: [
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-
-                  // 検索欄
-                  Container(
-                    height: 33,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF3B2B1B),
-                      borderRadius: BorderRadius.circular(30),
-                      border: Border.all(
-                        color: const Color(0xFF594531),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 14),
-                        Icon(
-                          Icons.search,
-                          size: 15,
-                          color: subText,
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          '作品名やあらすじで検索（デモ）',
-                          style: TextStyle(
-                            color: subText,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 11),
-
-                  // マイ作品・作品投稿
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _actionCard(
-                          Icons.grid_view,
-                          'マイ作品',
-                          '投稿した作品を管理する',
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _actionCard(
-                          Icons.upload,
-                          '作品投稿',
-                          '新しい作品を投稿する',
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // カテゴリ
-                  Row(
-                    children: [
-                      _tab('すべて', true),
-                      _tab('文字', false),
-                      _tab('画像', false),
-                      _tab('動画', false),
-                    ],
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  // ==================================
-                  // Djangoから取得した作品を表示
-                  // ==================================
-                  Expanded(
-                    child: FutureBuilder<Map<String, dynamic>>(
-                      future: _workMenuFuture,
-
-                      builder: (context, snapshot) {
-
-                        // 読み込み中
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const Center(
-                            child: CircularProgressIndicator(
-                              color: orange,
-                            ),
-                          );
-                        }
-
-                        // エラーが発生した場合
-                        if (snapshot.hasError) {
-                          return Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.error_outline,
-                                  color: orange,
-                                  size: 35,
-                                ),
-                                const SizedBox(height: 10),
-                                Text(
-                                  '作品の取得に失敗しました',
-                                  style: TextStyle(
-                                    color: mainText,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                                const SizedBox(height: 5),
-                                Text(
-                                  '${snapshot.error}',
-                                  style: TextStyle(
-                                    color: subText,
-                                    fontSize: 10,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 12),
-                                ElevatedButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      _workMenuFuture = _loadWorkMenu();
-                                    });
-                                  },
-                                  child: const Text('再読み込み'),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-
-                        // 取得したデータが存在しない場合
-                        if (!snapshot.hasData) {
-                          return Center(
-                            child: Text(
-                              '作品データがありません',
-                              style: TextStyle(color: subText),
-                            ),
-                          );
-                        }
-
-                        // Djangoから取得したデータ
-                        final result = snapshot.data!;
-
-                        // フォロー作品
-                        final followWorks =
-                            List<dynamic>.from(
-                              result['follow'] ?? [],
-                            );
-
-                        // おすすめ作品
-                        final recommendWorks =
-                            List<dynamic>.from(
-                              result['recommend'] ?? [],
-                            );
-
-                        // 作品一覧を表示
-                        return ListView(
-                          children: [
-
-                            // フォロー作品
-                            _buildWorkSection(
-                              'フォロー作品',
-                              followWorks,
-                            ),
-
-                            const SizedBox(height: 20),
-
-                            // おすすめ作品
-                            _buildWorkSection(
-                              'おすすめ作品',
-                              recommendWorks,
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
+            child: _actionCard(
+              Icons.bookmark_border,
+              'マイ作品',
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _actionCard(
+              Icons.add_circle_outline,
+              '作品投稿',
             ),
           ),
         ],
@@ -311,162 +304,29 @@ class _WorkState extends State<Work> {
     );
   }
 
-  // ==========================================
-  // 作品一覧のセクションを作成
-  // ==========================================
-  Widget _buildWorkSection(
-    String sectionTitle,
-    List<dynamic> works,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-
-        // セクションのタイトル
-        Text(
-          sectionTitle,
-          style: const TextStyle(
-            color: mainText,
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-
-        const SizedBox(height: 8),
-
-        // 作品がない場合
-        if (works.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 15),
-            child: Center(
-              child: Text(
-                '作品がありません',
-                style: TextStyle(
-                  color: subText,
-                  fontSize: 11,
-                ),
-              ),
-            ),
-          )
-
-        // 作品がある場合
-        else
-          LayoutBuilder(
-            builder: (context, constraints) {
-
-              return GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-
-                // 3列で表示
-                gridDelegate:
-                    SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 12,
-                  childAspectRatio:
-                      constraints.maxWidth / 3 / 235,
-                ),
-
-                itemCount: works.length,
-
-                itemBuilder: (context, index) {
-
-                  // 作品データを取得
-                  final work = works[index];
-
-                  // 作品タイトル
-                  final title =
-                      work['title']?.toString() ?? 'タイトルなし';
-
-                  // 投稿者ID
-                  // 現在のAPIではユーザー名ではなくIDを表示
-                  final author =
-                      '投稿者ID: ${work['user_id'] ?? '不明'}';
-
-                  // 閲覧数はAPIにないため仮表示
-                  const views = '—';
-
-                  // カードの色を順番に変更
-                  final colors =
-                      workColors[index % workColors.length];
-
-                  return _WorkCard(
-                    title: title,
-                    author: author,
-                    views: views,
-                    colors: colors,
-                  );
-                },
-              );
-            },
-          ),
-      ],
-    );
-  }
-
-  // ==========================================
-  // サイドバーのメニュー
-  // ==========================================
-  static Widget _menu(
-    IconData icon,
-    String title, {
-    bool selected = false,
-    bool notification = false,
-  }) {
+  Widget _actionCard(IconData icon, String title) {
     return Container(
-      height: 31,
-      margin: const EdgeInsets.symmetric(
-        horizontal: 9,
-        vertical: 2,
+      padding: const EdgeInsets.symmetric(
+        vertical: 17,
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 9),
       decoration: BoxDecoration(
-        color: selected
-            ? const Color(0xFF50321B)
-            : Colors.transparent,
-        borderRadius: BorderRadius.circular(20),
+        color: card,
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Icon(
-                icon,
-                size: 13,
-                color: selected ? orange : subText,
-              ),
-              if (notification)
-                Positioned(
-                  top: -6,
-                  right: -6,
-                  child: Container(
-                    width: 12,
-                    height: 12,
-                    decoration: const BoxDecoration(
-                      color: orange,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Center(
-                      child: Text(
-                        '3',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 8,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
+          Icon(
+            icon,
+            color: orange,
+            size: 20,
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           Text(
             title,
-            style: TextStyle(
-              color: selected ? orange : subText,
-              fontSize: 11,
+            style: const TextStyle(
+              color: mainText,
+              fontSize: 13,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -475,114 +335,164 @@ class _WorkState extends State<Work> {
     );
   }
 
-  // ==========================================
-  // マイ作品・作品投稿カード
-  // ==========================================
-  static Widget _actionCard(
-    IconData icon,
-    String title,
-    String subtitle,
-  ) {
-    return Container(
-      height: 48,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      decoration: BoxDecoration(
-        color: card,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: const Color(0xFF554331),
-        ),
+  // ==============================
+  // カテゴリー
+  // ==============================
+
+  Widget _buildCategory() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 18,
+        vertical: 12,
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 12,
-            backgroundColor: const Color(0xFF58371D),
-            child: Icon(
-              icon,
-              size: 13,
-              color: orange,
-            ),
-          ),
-          const SizedBox(width: 9),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: mainText,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: subText,
-                    fontSize: 9,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Icon(
-            Icons.chevron_right,
-            color: subText,
-            size: 15,
-          ),
+          _tab('すべて', true),
+          _tab('文字', false),
+          _tab('画像', false),
+          _tab('動画', false),
         ],
       ),
     );
   }
 
-  // ==========================================
-  // カテゴリタブ
-  // ==========================================
-  static Widget _tab(String title, bool selected) {
-    return Container(
-      margin: const EdgeInsets.only(right: 20),
-      padding: const EdgeInsets.only(bottom: 9),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: selected ? orange : Colors.transparent,
-            width: 2,
+  Widget _tab(String title, bool selected) {
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.only(right: 7),
+        padding: const EdgeInsets.symmetric(
+          vertical: 9,
+        ),
+        decoration: BoxDecoration(
+          color: selected ? orange : card,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          title,
+          style: TextStyle(
+            color: selected ? bg : subText,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ),
-      child: Text(
-        title,
-        style: TextStyle(
-          color: selected ? mainText : subText,
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-        ),
+    );
+  }
+
+  // ==============================
+  // 作品一覧
+  // ==============================
+
+  Widget _buildWorkSection(
+    String sectionTitle,
+    List<dynamic> works,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 18,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // セクションタイトル
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              vertical: 12,
+            ),
+            child: Text(
+              sectionTitle,
+              style: const TextStyle(
+                color: mainText,
+                fontSize: 17,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+
+          // 作品がない場合
+          if (works.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Center(
+                child: Text(
+                  '作品がありません',
+                  style: TextStyle(color: subText),
+                ),
+              ),
+            )
+
+          // 作品がある場合
+          else
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final cardWidth =
+                    (constraints.maxWidth - 20) / 3;
+
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics:
+                      const NeverScrollableScrollPhysics(),
+                  itemCount: works.length,
+                  gridDelegate:
+                      SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: cardWidth / 235,
+                  ),
+
+                  // 作品カードを作成
+                  itemBuilder: (context, index) {
+                    final work =
+                        Map<String, dynamic>.from(
+                      works[index] as Map,
+                    );
+
+                    return GestureDetector(
+                      // 作品カードを押したとき
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                WorkDetailPage(
+                              work: work,
+                            ),
+                          ),
+                        );
+                      },
+
+                      // 作品カード
+                      child: _WorkCard(
+                        title: work['title']
+                                ?.toString() ??
+                            'タイトルなし',
+                        author:
+                            '投稿者ID: ${work['user_id'] ?? '不明'}',
+                        views: '—',
+                        colors: workColors[
+                            index % workColors.length],
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+        ],
       ),
     );
   }
 }
 
-// ==========================================
+// ==================================================
 // 作品カード
-// ==========================================
+// ==================================================
+
 class _WorkCard extends StatelessWidget {
-
-  // 作品タイトル
   final String title;
-
-  // 投稿者
   final String author;
-
-  // 閲覧数
   final String views;
-
-  // 背景色
   final List<Color> colors;
 
   const _WorkCard({
@@ -597,115 +507,100 @@ class _WorkCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF3A2A1B),
-        borderRadius: BorderRadius.circular(13),
-        border: Border.all(
-          color: const Color(0xFF554331),
-        ),
+        borderRadius: BorderRadius.circular(12),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
-          // 作品のサムネイル部分
+          // 作品画像部分
           Expanded(
+            flex: 5,
             child: Container(
               width: double.infinity,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
+                  colors: colors,
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: colors,
                 ),
               ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-
-                  const Icon(
-                    Icons.star_border,
-                    color: Color(0xFFFFE9D0),
-                    size: 34,
-                  ),
-
-                  // 作品カテゴリ
-                  Positioned(
-                    top: 7,
-                    left: 7,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF59432F),
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      child: const Text(
-                        '小説',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // お気に入りアイコン
-                  const Positioned(
-                    top: 7,
-                    right: 7,
-                    child: CircleAvatar(
-                      radius: 12,
-                      backgroundColor: Color(0xFF443323),
-                      child: Icon(
-                        Icons.star_border,
-                        color: Colors.white,
-                        size: 14,
-                      ),
-                    ),
-                  ),
-                ],
+              child: const Center(
+                child: Icon(
+                  Icons.auto_stories,
+                  color: Color(0xFFE9D9C6),
+                  size: 38,
+                ),
               ),
             ),
           ),
 
-          // 作品情報
-          Container(
-            height: 48,
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(
-              12, 7, 8, 5,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-
-                // 作品タイトル
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFFE9D9C6),
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
+          // 作品情報部分
+          Expanded(
+            flex: 4,
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '小説',
+                    style: TextStyle(
+                      color: Color(0xFFE9782B),
+                      fontSize: 10,
+                    ),
                   ),
-                ),
 
-                const SizedBox(height: 3),
+                  const SizedBox(height: 5),
 
-                // 投稿者・閲覧数
-                Text(
-                  '$author ・ 閲覧 $views',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFFB5A18A),
-                    fontSize: 10,
+                  // 作品タイトル
+                  Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFFE9D9C6),
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-              ],
+
+                  const Spacer(),
+
+                  // 投稿者
+                  Text(
+                    author,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFFB5A18A),
+                      fontSize: 9,
+                    ),
+                  ),
+
+                  const SizedBox(height: 4),
+
+                  // 閲覧数
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.visibility_outlined,
+                        color: Color(0xFFB5A18A),
+                        size: 11,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        views,
+                        style: const TextStyle(
+                          color: Color(0xFFB5A18A),
+                          fontSize: 9,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ],
