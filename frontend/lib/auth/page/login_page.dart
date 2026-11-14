@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../../core/api_client.dart';
 import '../repository/auth_repository.dart';
 import '../widget/auth_widgets.dart';
 import 'register_page.dart';
@@ -50,14 +51,8 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => _loading = true);
     // メールとパスワードでログインを行う
     try {
-      final cred = await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      // 認証成功したらIDトークンを取得する
-      final token = await cred.user!.getIdToken();
-      // 取得したトークンをDjangoのAPIに送り、PostgreSQLにもユーザー登録されているか確認する
-      final registered = await _repo.login(token!);
+      // Firebaseにログインし、DjangoのAPIでPostgreSQLにもユーザー登録されているか確認する
+      final registered = await _repo.signIn(email, password);
       // ここまでで画面がなかったらリターン
       if (!mounted) return;
 
@@ -96,7 +91,7 @@ class _LoginPageState extends State<LoginPage> {
         return 'ログインに失敗しました($code)';
     }
   }
-
+  // この画面限定ウィジェット（他auth共通ウィジェットはauth_widgets.dartに）
   @override
   Widget build(BuildContext context) {
     return AuthShell(

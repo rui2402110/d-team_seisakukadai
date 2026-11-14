@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../../core/api_client.dart';
 import '../repository/auth_repository.dart';
 import '../widget/auth_widgets.dart';
 import 'login_page.dart';
@@ -94,22 +95,17 @@ class _RegisterPageState extends State<RegisterPage> {
 
     setState(() => _loading = true);
     try {
-      final auth = FirebaseAuth.instance;
-      User? user = auth.currentUser;
-
       // Firebaseのアカウント作成(作成済みなら飛ばす = やり直し対応)
-      if (!_firebaseDone || user == null) {
-        final cred = await auth.createUserWithEmailAndPassword(
-          email: _email.text.trim(),
-          password: _password.text,
+      if (!_firebaseDone || !_repo.isSignedIn) {
+        await _repo.createFirebaseAccount(
+          _email.text.trim(),
+          _password.text,
         );
-        user = cred.user;
         _firebaseDone = true;
       }
-      // ログイン中ユーザーのidトークンをfirebaseサーバーから取得
-      final token = await user!.getIdToken();
-      // 取得したトークンとユーザー名をDjangoのAPIに送り、PostgreSQLにデータを保存
-      await _repo.register(token!, _name.text.trim()); 
+      // ユーザー名をDjangoのAPIに送り、PostgreSQLにデータを保存
+      // (IDトークンの取得はrepositoryの中で行う)
+      await _repo.register(_name.text.trim());
       // ここで画面が存在していない場合return
       if (!mounted) return;
       // タイムライン画面へ遷移
@@ -144,7 +140,8 @@ class _RegisterPageState extends State<RegisterPage> {
       }
     });
   }
-
+  
+  // この画面限定ウィジェット（他auth共通ウィジェットはauth_widgets.dartに）
   @override
   Widget build(BuildContext context) {
     return AuthShell(

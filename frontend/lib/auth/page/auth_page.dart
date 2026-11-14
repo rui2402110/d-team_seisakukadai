@@ -1,45 +1,42 @@
 import 'package:flutter/material.dart';
 
-import '../../core/kakko_theme.dart';
-import '../widget/auth_widgets.dart';
-import 'login_page.dart';
-import 'register_page.dart';
+import '../../timeline/page/timeline_page.dart';
+import '../repository/auth_repository.dart';
+import 'auth_page.dart';
 
-/// 入口の画面 認証方法を選択するための画面
-class AuthPage extends StatelessWidget {
-  const AuthPage({super.key});
+/// アプリ起動直後の分かれ道
+/// ログイン済みならタイムライン、未ログインなら認証の入口(AuthPage)を表示する
+class AuthGate extends StatefulWidget {
+  const AuthGate({super.key});
+
+  @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  // 起動時に1回だけ判定する
+  late final Future<bool> _signedIn;
+
+  @override
+  void initState() {
+    super.initState();
+    _signedIn = AuthRepository().isSignedInAtStart();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return AuthShell(
-      children: [
-        Text(
-          '好きな作品ごとにコミュニティをつくって、\n感想を語り合おう',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 13,
-            height: 1.6,
-            color: KakkoColors.muted,
-          ),
-        ),
-        const SizedBox(height: 26),
-        AuthButton(
-          label: 'ログイン',
-          // ログイン画面へ遷移
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const LoginPage()),
-          ),
-        ),
-        const SizedBox(height: 12),
-        AuthButton(
-          label: '新規登録',
-          primary: false,
-          // 新規登録画面へ遷移
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const RegisterPage()),
-          ),
-        ),
-      ],
+    return FutureBuilder<bool>(
+      future: _signedIn,
+      builder: (context, snapshot) {
+        // 判定中
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        // ログイン済みならタイムライン、そうでなければ入口の画面
+        return snapshot.data == true ? const Timeline() : const AuthPage();
+      },
     );
   }
 }
