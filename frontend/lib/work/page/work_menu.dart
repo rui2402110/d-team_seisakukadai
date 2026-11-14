@@ -4,14 +4,14 @@ import '../../component/navbar.dart';
 import '../repository/work_repository.dart';
 import 'work_detail.dart';
 
-class Work extends StatefulWidget {
-  const Work({super.key});
+class WorkMenuPage extends StatefulWidget {
+  const WorkMenuPage({super.key});
 
   @override
-  State<Work> createState() => _WorkState();
+  State<WorkMenuPage> createState() => _WorkState();
 }
 
-class _WorkState extends State<Work> {
+class _WorkState extends State<WorkMenuPage> {
   // ==============================
   // 色の設定
   // ==============================

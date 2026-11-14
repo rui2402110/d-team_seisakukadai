@@ -37,7 +37,7 @@ class KakkoApp extends StatelessWidget {
       routes: {
         '/timeline': (_) => const Timeline(),
         '/search': (_) => const Search(),
-        '/work': (_) => const Work(),
+        '/work': (_) => const WorkMenuPage(),
         '/community': (_) => const CommunityMenuPage(),
         '/setting': (_) => const Setting(),
         '/notification': (_) => const UserNotification(),
