@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/breakpoints.dart';
+import '../core/kakko_theme.dart';
 
 /// ナビの項目の番号。各画面が「自分は何番目か」を Navbar に伝えるために使う
 /// (例: Navbar(selectedIndex: NavIndex.work, child: ...))
@@ -80,11 +81,25 @@ class Navbar extends StatelessWidget {
           // 広い画面: 左にサイドバー、右に画面の中身
           return Row(
             children: [
-              SizedBox(
-                width: 260,
-                child: _buildSidebar(context),
+              // kakko_Theme.dart を適用し、カラーを指定
+              Theme(
+                data: kakkoTheme(),
+                child: Material(
+                  color: KakkoColors.ink,
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 260,
+                        child: _buildSidebar(context),
+                      ),
+                      const VerticalDivider(
+                        width: 1,
+                        color: KakkoColors.inkLine,
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              const VerticalDivider(width: 1),
               Expanded(child: child),
             ],
           );

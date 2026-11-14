@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../component/navbar.dart';
+import '../../core/kakko_theme.dart';
 import '../repository/work_repository.dart';
 import 'work_detail.dart';
 
@@ -12,17 +13,9 @@ class WorkMenuPage extends StatefulWidget {
 }
 
 class _WorkState extends State<WorkMenuPage> {
-  // ==============================
-  // 色の設定
-  // ==============================
-
-  static const Color bg = Color(0xFF2D2016);
-  static const Color sidebar = Color(0xFF241910);
-  static const Color card = Color(0xFF3A2A1B);
-  static const Color orange = Color(0xFFE9782B);
-  static const Color mainText = Color(0xFFE9D9C6);
-  static const Color subText = Color(0xFFB5A18A);
-  static const Color line = Color(0xFF49382A);
+  // 基本の色は core/kakko_theme.dart を使う。
+  // ここには、この画面だけで使う色(作品カードのグラデーション)を置く
+  // のちのち作品カードのウィジェットは切り出して使いたい
 
   // 作品カードの色
   static const List<List<Color>> workColors = [
@@ -70,7 +63,7 @@ class _WorkState extends State<WorkMenuPage> {
     return Navbar(
       selectedIndex: NavIndex.work,
       child: Scaffold(
-      backgroundColor: bg,
+      backgroundColor: KakkoColors.ink,
       body: SafeArea(
         child: Column(
           children: [
@@ -97,7 +90,7 @@ class _WorkState extends State<WorkMenuPage> {
                       ConnectionState.waiting) {
                     return const Center(
                       child: CircularProgressIndicator(
-                        color: orange,
+                        color: KakkoColors.accent,
                       ),
                     );
                   }
@@ -110,7 +103,7 @@ class _WorkState extends State<WorkMenuPage> {
                         children: [
                           const Icon(
                             Icons.error_outline,
-                            color: orange,
+                            color: KakkoColors.accent,
                             size: 40,
                           ),
                           const SizedBox(height: 12),
@@ -118,7 +111,7 @@ class _WorkState extends State<WorkMenuPage> {
                             '作品の取得に失敗しました\n${snapshot.error}',
                             textAlign: TextAlign.center,
                             style: const TextStyle(
-                              color: mainText,
+                              color: KakkoColors.paperText,
                               fontSize: 13,
                             ),
                           ),
@@ -130,8 +123,8 @@ class _WorkState extends State<WorkMenuPage> {
                               });
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: orange,
-                              foregroundColor: bg,
+                              backgroundColor: KakkoColors.accent,
+                              foregroundColor: KakkoColors.ink,
                             ),
                             child: const Text('再読み込み'),
                           ),
@@ -145,7 +138,7 @@ class _WorkState extends State<WorkMenuPage> {
                     return const Center(
                       child: Text(
                         '作品がありません',
-                        style: TextStyle(color: subText),
+                        style: TextStyle(color: KakkoColors.muted),
                       ),
                     );
                   }
@@ -202,14 +195,14 @@ class _WorkState extends State<WorkMenuPage> {
         children: [
           const Icon(
             Icons.menu_book,
-            color: orange,
+            color: KakkoColors.accent,
             size: 28,
           ),
           const SizedBox(width: 10),
           const Text(
             '作品',
             style: TextStyle(
-              color: mainText,
+              color: KakkoColors.paperText,
               fontSize: 23,
               fontWeight: FontWeight.bold,
             ),
@@ -217,7 +210,7 @@ class _WorkState extends State<WorkMenuPage> {
           const Spacer(),
           const Icon(
             Icons.notifications_none,
-            color: mainText,
+            color: KakkoColors.paperText,
             size: 25,
           ),
         ],
@@ -236,19 +229,19 @@ class _WorkState extends State<WorkMenuPage> {
         vertical: 8,
       ),
       child: TextField(
-        style: const TextStyle(color: mainText),
+        style: const TextStyle(color: KakkoColors.paperText),
         decoration: InputDecoration(
           hintText: '作品名やあらすじで検索（デモ）',
           hintStyle: const TextStyle(
-            color: subText,
+            color: KakkoColors.muted,
             fontSize: 13,
           ),
           prefixIcon: const Icon(
             Icons.search,
-            color: subText,
+            color: KakkoColors.muted,
           ),
           filled: true,
-          fillColor: card,
+          fillColor: KakkoColors.inkSoft,
           contentPadding: const EdgeInsets.symmetric(
             vertical: 13,
           ),
@@ -297,7 +290,7 @@ class _WorkState extends State<WorkMenuPage> {
         vertical: 17,
       ),
       decoration: BoxDecoration(
-        color: card,
+        color: KakkoColors.inkSoft,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -305,14 +298,14 @@ class _WorkState extends State<WorkMenuPage> {
         children: [
           Icon(
             icon,
-            color: orange,
+            color: KakkoColors.accent,
             size: 20,
           ),
           const SizedBox(width: 8),
           Text(
             title,
             style: const TextStyle(
-              color: mainText,
+              color: KakkoColors.paperText,
               fontSize: 13,
               fontWeight: FontWeight.bold,
             ),
@@ -351,14 +344,14 @@ class _WorkState extends State<WorkMenuPage> {
           vertical: 9,
         ),
         decoration: BoxDecoration(
-          color: selected ? orange : card,
+          color: selected ? KakkoColors.accent : KakkoColors.inkSoft,
           borderRadius: BorderRadius.circular(20),
         ),
         alignment: Alignment.center,
         child: Text(
           title,
           style: TextStyle(
-            color: selected ? bg : subText,
+            color: selected ? KakkoColors.ink : KakkoColors.muted,
             fontSize: 12,
             fontWeight: FontWeight.bold,
           ),
@@ -390,7 +383,7 @@ class _WorkState extends State<WorkMenuPage> {
             child: Text(
               sectionTitle,
               style: const TextStyle(
-                color: mainText,
+                color: KakkoColors.paperText,
                 fontSize: 17,
                 fontWeight: FontWeight.bold,
               ),
@@ -404,7 +397,7 @@ class _WorkState extends State<WorkMenuPage> {
               child: Center(
                 child: Text(
                   '作品がありません',
-                  style: TextStyle(color: subText),
+                  style: TextStyle(color: KakkoColors.muted),
                 ),
               ),
             )
@@ -488,7 +481,7 @@ class _WorkCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF3A2A1B),
+        color: KakkoColors.inkSoft,
         borderRadius: BorderRadius.circular(12),
       ),
       clipBehavior: Clip.antiAlias,
@@ -510,7 +503,7 @@ class _WorkCard extends StatelessWidget {
               child: const Center(
                 child: Icon(
                   Icons.auto_stories,
-                  color: Color(0xFFE9D9C6),
+                  color: KakkoColors.paperText,
                   size: 38,
                 ),
               ),
@@ -529,7 +522,7 @@ class _WorkCard extends StatelessWidget {
                   const Text(
                     '小説',
                     style: TextStyle(
-                      color: Color(0xFFE9782B),
+                      color: KakkoColors.accent,
                       fontSize: 10,
                     ),
                   ),
@@ -542,7 +535,7 @@ class _WorkCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      color: Color(0xFFE9D9C6),
+                      color: KakkoColors.paperText,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),
@@ -556,7 +549,7 @@ class _WorkCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      color: Color(0xFFB5A18A),
+                      color: KakkoColors.muted,
                       fontSize: 9,
                     ),
                   ),
@@ -568,14 +561,14 @@ class _WorkCard extends StatelessWidget {
                     children: [
                       const Icon(
                         Icons.visibility_outlined,
-                        color: Color(0xFFB5A18A),
+                        color: KakkoColors.muted,
                         size: 11,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         views,
                         style: const TextStyle(
-                          color: Color(0xFFB5A18A),
+                          color: KakkoColors.muted,
                           fontSize: 9,
                         ),
                       ),
