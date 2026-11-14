@@ -1,5 +1,7 @@
-
 import 'package:flutter/material.dart';
+
+import '../../component/navbar.dart';
+import '../../core/breakpoints.dart';
 
 /// コミュニティデータ
 class Community {
@@ -383,7 +385,10 @@ class _CommunityMenuPageState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    // ナビ付きの枠に、この画面の中身を渡す
+    return Navbar(
+      selectedIndex: NavIndex.community,
+      child: Scaffold(
       backgroundColor: const Color(0xFF2B2017),
 
       body: SafeArea(
@@ -471,7 +476,7 @@ class _CommunityMenuPageState
                               ),
                             ];
 
-                            if (constraints.maxWidth < 800) {
+                            if (constraints.maxWidth < kContentWideBreakpoint) {
                               return Column(
                                 children: cards,
                               );
@@ -510,6 +515,6 @@ class _CommunityMenuPageState
                     ),
                   ),
       ),
-    );
+    ));
   }
 }
