@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'component/navbar.dart';
 
 class Profile extends StatefulWidget {
+  const Profile({super.key});
+
   @override
   _ProfileState createState() => _ProfileState();
 }
@@ -8,7 +11,10 @@ class Profile extends StatefulWidget {
 class _ProfileState extends State<Profile> {
   @override
   Widget build(BuildContext context) {
-    return Column(
+    // ナビ付きの枠に、この画面の中身を渡す(プロフィールはナビのどの項目も選択しない)
+    return Navbar(
+      selectedIndex: null,
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
@@ -24,7 +30,7 @@ class _ProfileState extends State<Profile> {
                     foregroundColor: Colors.white, // アイコンの色
                   ),
                   splashRadius: 20.0,
-                  onPressed: () =>  Navigator.of(context).pop()
+                  onPressed: () => Navigator.of(context).maybePop()
                 ),
                 // Icon(Icons.arrow_back_ios_new),
                 Column(
@@ -108,6 +114,6 @@ class _ProfileState extends State<Profile> {
             ),
           )
         ],
-    );
+    ));
   }
 }

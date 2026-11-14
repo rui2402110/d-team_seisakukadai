@@ -2,6 +2,8 @@
 // ※元コードでは同じ material.dart が2回読み込まれていたため、1つに整理しています。
 import 'package:flutter/material.dart';
 
+import '../../component/navbar.dart';
+
 // 作品詳細画面で使うデータは、一覧画面から work として受け取っています。
 // 現在のこのファイルでは FirebaseAuth と WorkRepository を直接使用していないため、
 // 未使用の import は削除しています。API連携をここに追加するときに必要に応じて再追加してください。
@@ -189,7 +191,10 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
   // Scaffoldを画面の土台にし、ヘッダーとスクロール可能な本文を縦方向に配置します。
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    // ナビ付きの枠に、この画面の中身を渡す(詳細画面でも「作品」を選択中にする)
+    return Navbar(
+      selectedIndex: NavIndex.work,
+      child: Scaffold(
       backgroundColor: bg,
       body: SafeArea(
         child: Column(
@@ -239,7 +244,7 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   // 画面上部のヘッダーを作成するメソッド。

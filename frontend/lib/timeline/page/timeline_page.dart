@@ -1,5 +1,6 @@
 // import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../../component/navbar.dart';
 import '../../core/kakko_theme.dart';
 
 class Timeline extends StatefulWidget {
@@ -203,7 +204,10 @@ class _TimelineState extends State<Timeline>
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    // ナビ付きの枠に、この画面の中身を渡す
+    return Navbar(
+      selectedIndex: NavIndex.timeline,
+      child: Column(
       children: [
         TabBar(
           controller: _tabController,
@@ -275,8 +279,11 @@ class _TimelineState extends State<Timeline>
                           ),
                           if (icons)...{
                             Divider(),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            // 幅が狭いときは、アイコンとボタンを折り返して表示する
+                            Wrap(
+                              alignment: WrapAlignment.spaceBetween,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              runSpacing: 8,
                               children: [
                               Row(
                                 spacing: 10,
@@ -318,6 +325,6 @@ class _TimelineState extends State<Timeline>
           ),
         )
       ]
-    );
+    ));
   }
 }

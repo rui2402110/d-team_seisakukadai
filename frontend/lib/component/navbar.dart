@@ -1,12 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../timeline/page/timeline_page.dart';
-import '../../search.dart';
-import '../work/page/work_menu.dart';
-import '../community/page/community_menu_page.dart';
-import '../../notification.dart';
-import '../../setting.dart';
-import '../profile.dart';
+import '../core/breakpoints.dart';
 
 /// ナビの項目の番号。各画面が「自分は何番目か」を Navbar に伝えるために使う
 /// (例: Navbar(selectedIndex: NavIndex.work, child: ...))
@@ -52,8 +46,12 @@ class Navbar extends StatelessWidget {
     required this.child,
   });
 
-      case 3:
-        return CommunityMenuPage();
+  /// 別の画面へ移動する(それまでの履歴は消す = 3度目4度目でも画面が積み重ならない)
+  void _goTo(BuildContext context, String route) {
+    // いま表示している画面と同じ場合は何もしない
+    if (ModalRoute.of(context)?.settings.name == route) return;
+    Navigator.of(context).pushNamedAndRemoveUntil(route, (_) => false);
+  }
 
   /// プロフィール画面を開く(戻るボタンで戻れるように、履歴は残す)
   void _openProfile(BuildContext context) {
@@ -68,7 +66,7 @@ class Navbar extends StatelessWidget {
         builder: (context, constraints) {
           // 狭い画面(スマホなど)の場合
           if (constraints.maxWidth < kWideBreakpoint) {
-            // ここで「フリックで開くメニュー」に切り替える。
+            // TODO(学習用・スマホ対応): ここで「フリックで開くメニュー」に切り替える。
             //   Scaffold の drawer に _buildSidebar(context) を渡して配置すると、
             //   画面の左端からのフリック(スワイプ)でメニューが開く。
             //   例: return Scaffold(

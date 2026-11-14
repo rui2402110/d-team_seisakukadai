@@ -1,7 +1,6 @@
-
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
+import '../../component/navbar.dart';
 import '../repository/work_repository.dart';
 import 'work_detail.dart';
 
@@ -56,24 +55,9 @@ class _WorkState extends State<Work> {
   }
 
   Future<Map<String, dynamic>> _loadWorkMenu() async {
-    // ログイン中のユーザーを取得
-    final user = FirebaseAuth.instance.currentUser;
-
-    if (user == null) {
-      throw Exception('ログインしていません');
-    }
-
-    // Firebase IDトークンを取得
-    final idToken = await user.getIdToken();
-
-    if (idToken == null) {
-      throw Exception('認証トークンを取得できませんでした');
-    }
-
     // Django APIから作品一覧を取得
-    final result = await WorkRepository().getWorkMenu(idToken);
-
-    return result;
+    // (ログイン確認とIDトークンの取得は WorkRepository の中で行う)
+    return WorkRepository().getWorkMenu();
   }
 
   // ==============================
@@ -82,7 +66,10 @@ class _WorkState extends State<Work> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    // ナビ付きの枠に、この画面の中身を渡す
+    return Navbar(
+      selectedIndex: NavIndex.work,
+      child: Scaffold(
       backgroundColor: bg,
       body: SafeArea(
         child: Column(
@@ -198,7 +185,7 @@ class _WorkState extends State<Work> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   // ==============================
@@ -424,22 +411,19 @@ class _WorkState extends State<Work> {
 
           // 作品がある場合
           else
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final cardWidth =
-                    (constraints.maxWidth - 20) / 3;
-
-                return GridView.builder(
+            // 列数を固定せず、カード1枚の最大幅だけを決める。
+            // 画面の幅に合わせて、列数が自動で変わる(広い画面は多く、狭い画面は少なく)
+            GridView.builder(
                   shrinkWrap: true,
                   physics:
                       const NeverScrollableScrollPhysics(),
                   itemCount: works.length,
                   gridDelegate:
-                      SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
+                      const SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 260, // カード1枚の最大の幅
                     crossAxisSpacing: 10,
                     mainAxisSpacing: 12,
-                    childAspectRatio: cardWidth / 235,
+                    mainAxisExtent: 235, // カードの高さ
                   ),
 
                   // 作品カードを作成
@@ -476,8 +460,6 @@ class _WorkState extends State<Work> {
                       ),
                     );
                   },
-                );
-              },
             ),
         ],
       ),
