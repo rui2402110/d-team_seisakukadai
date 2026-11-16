@@ -191,8 +191,8 @@ class _ProfileState extends State<Profile>
                   height: 300,
                   child: TabBarView(
                     controller: _tabController,
-                    children: const [
-                      Text("投稿"),
+                    children: [
+                      
                       Text("返信"),
                       Text("メディア"),
                       Text("作品"),
