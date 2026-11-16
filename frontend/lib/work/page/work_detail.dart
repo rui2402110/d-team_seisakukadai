@@ -1,25 +1,14 @@
-// Flutterの画面部品（Scaffold、Text、Button、Columnなど）を利用するためのライブラリ。
-// ※元コードでは同じ material.dart が2回読み込まれていたため、1つに整理しています。
+
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
 
-import '../../component/navbar.dart';
-
-// 作品詳細画面で使うデータは、一覧画面から work として受け取っています。
-// 現在のこのファイルでは FirebaseAuth と WorkRepository を直接使用していないため、
-// 未使用の import は削除しています。API連携をここに追加するときに必要に応じて再追加してください。
-
-// 作品詳細画面のウィジェット。
-// StatefulWidget にすることで、いいね・フォロー・コメント追加など、
-// ユーザー操作によって変化する画面状態を管理できるようにしています。
 class WorkDetailPage extends StatefulWidget {
   // 作品一覧画面から受け取る作品情報
-  // 一覧画面から受け取る作品データ。
-  // Map形式なので、Django APIから返されたJSONの各項目をキーで参照できます。
-  // dynamic は値の型が項目ごとに異なる可能性があるため指定しています。
   final Map<String, dynamic> work;
 
-  // コンストラクタ。
-  // required により、画面を開く側は必ず作品データ work を渡す必要があります。
   const WorkDetailPage({
     super.key,
     required this.work,
@@ -29,12 +18,8 @@ class WorkDetailPage extends StatefulWidget {
   State<WorkDetailPage> createState() => _WorkDetailPageState();
 }
 
-// WorkDetailPage の状態を管理するクラス。
-// 先頭の _ は、このクラスがこのDartファイル内だけで使われる非公開クラスであることを表します。
 class _WorkDetailPageState extends State<WorkDetailPage> {
-  // 画面全体で共通利用する色を定数として定義しています。
-  // static const にすることで、Stateのインスタンスごとに作らず固定値として利用できます。
-  // デモ画面に合わせた色
+  // デザイン設定
   static const Color bg = Color(0xFF2D2016);
   static const Color card = Color(0xFF3A2A1B);
   static const Color orange = Color(0xFFE9782B);
@@ -42,29 +27,30 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
   static const Color subText = Color(0xFFB5A18A);
   static const Color line = Color(0xFF49382A);
 
-  // いいね・フォローのON/OFF状態。
-  // true は押されている状態、false は押されていない状態を表します。
-  // 現在は画面内だけで保持しており、アプリを再起動すると初期値に戻ります。
-  // ボタン操作時は setState() で値を変更し、画面を再描画します。
+  // DjangoサーバーのURL
+  // Androidエミュレーターの場合は10.0.2.2を使用
+  static const String _baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://10.0.2.2:8000',
+  );
+
+  // Djangoから取得する作品情報
+  Map<String, dynamic>? _detailData;
+
+  // API通信
+  late Future<Map<String, dynamic>> _detailFuture;
+
   // いいね・フォロー状態
   bool isLiked = false;
   bool isFollowing = false;
 
-  // 画面に表示するいいね数の初期値。
-  // 現在はサンプル値で、Djangoのデータベースから取得した値ではありません。
-  int likeCount = 2310;
+  // いいね数
+  int likeCount = 0;
 
-  // コメント入力欄の文字列を読み書きするためのコントローラー。
-  // TextField の controller に設定し、送信時に入力内容を取得したり、
-  // 投稿後に clear() で入力欄を空にしたりします。
   // コメント入力欄
   final TextEditingController _commentController =
       TextEditingController();
 
-  // コメント一覧に表示する仮データ。
-  // name は投稿者名、time は投稿時刻の表示、text はコメント本文、
-  // initial は丸いアイコン内に表示する1文字です。
-  // 現状はDjango APIから取得しておらず、アプリ内だけで管理しています。
   // コメントのサンプルデータ
   final List<Map<String, String>> comments = [
     {
@@ -76,73 +62,140 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
     {
       'name': 'ゆき',
       'time': '3分前',
-      'text': '何度読み返しても泣ける。最終話、本当にありがとうございました。',
+      'text': '何度読み返しても泣ける。',
       'initial': 'ゆ',
     },
   ];
 
-  // 関連作品欄に表示する仮データ。
-  // title は作品名、author は投稿者、views は閲覧数です。
-  // 現在は固定データで、関連作品APIとの接続や詳細画面への遷移は未実装です。
-  // 関連作品のサンプルデータ
-  final List<Map<String, String>> relatedWorks = [
-    {
-      'title': 'サイレント・チャプター',
-      'author': '海野',
-      'views': '5.1万',
-    },
-    {
-      'title': '花布の記憶',
-      'author': 'しおり',
-      'views': '2.2万',
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
 
-  // この画面が破棄されるときに呼び出されるライフサイクルメソッド。
-  // TextEditingController を使い終わったら dispose() して、
-  // 不要なリソースが残らないようにします。
+    // 画面表示時にDjangoから作品情報を取得
+    _detailFuture = _loadWorkDetail();
+  }
+
   @override
   void dispose() {
     _commentController.dispose();
     super.dispose();
   }
 
-  // 以下は受け取った work から表示用の値を取り出す getter（取得専用プロパティ）です。
-  // APIの値が null の場合に備えて、?? で代わりに表示する文字列を指定しています。
-  // 作品情報を取得
-  String get title =>
-      widget.work['title']?.toString() ?? 'タイトルなし';
+  // Djangoから作品詳細を取得
+  Future<Map<String, dynamic>> _loadWorkDetail() async {
+    // 一覧画面から作品IDを取得
+    final workId = widget.work['id'] ?? widget.work['pk'];
 
+    if (workId == null) {
+      throw Exception('作品IDがありません');
+    }
+
+    // Firebaseログインユーザーを取得
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      throw Exception('ログインしていません');
+    }
+
+    // Firebase IDトークンを取得
+    final idToken = await user.getIdToken();
+
+    // DjangoにGETリクエストを送信
+    final response = await http.get(
+      Uri.parse('$_baseUrl/work/workdetail/$workId/'),
+      headers: {
+        'Authorization': 'Bearer $idToken',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    // 通信エラー
+    if (response.statusCode != 200) {
+      throw Exception(
+        '作品詳細の取得に失敗しました。\n'
+        'ステータスコード: ${response.statusCode}\n'
+        '${utf8.decode(response.bodyBytes)}',
+      );
+    }
+
+    // JSONをMapに変換
+    final data = jsonDecode(
+      utf8.decode(response.bodyBytes),
+    ) as Map<String, dynamic>;
+
+    // いいね数を取得
+    likeCount = (data['likecount'] as num?)?.toInt() ?? 0;
+
+    // 取得したデータを保存
+    _detailData = data;
+
+    return data;
+  }
+
+  // Djangoから取得したfields
+  Map<String, dynamic> get _fields {
+    final fields = _detailData?['fields'];
+
+    if (fields is Map) {
+      return Map<String, dynamic>.from(fields);
+    }
+
+    return widget.work;
+  }
+
+  // 作品タイトル
+  String get title =>
+      _fields['title']?.toString() ?? 'タイトルなし';
+
+  // 投稿者
   String get author =>
-      widget.work['user_name']?.toString() ??
-      widget.work['user_id']?.toString() ??
+      _fields['user']?.toString() ??
+      _fields['user_name']?.toString() ??
       '投稿者';
 
+  // 作品説明
   String get detail =>
-      widget.work['work_detail']?.toString() ?? '';
+      _fields['work_detail']?.toString() ?? '';
 
-  // work_type の数値を画面表示用のジャンル名に変換します。
-  // Django側の選択肢が 1=文字、2=画像、3=動画 であることを前提にしています。
+  // 作品タイプ
+  int get workType =>
+      (_fields['work_type'] as num?)?.toInt() ??
+      int.tryParse(_fields['work_type']?.toString() ?? '') ??
+      0;
+
+  // ジャンル名
   String get genre {
-    final type = widget.work['work_type'];
-
-    switch (type.toString()) {
-      case '1':
+    switch (workType) {
+      case 1:
         return '小説';
-      case '2':
+      case 2:
         return '画像';
-      case '3':
+      case 3:
         return '動画';
       default:
         return '作品';
     }
   }
 
-  // いいねボタンが押されたときの処理。
-  // isLiked を反転し、ONにしたときは件数を1増やし、OFFにしたときは1減らします。
-  // setState() によってFlutterに状態変更を通知し、表示を更新します。
-  // ※現在は画面内だけの仮処理で、サーバーへの保存は行っていません。
+  // 作品本文・画像・動画情報
+  dynamic get mainContent => _detailData?['Main'];
+
+  // 関連作品
+  List<Map<String, dynamic>> get relatedWorks {
+    final data = _detailData?['relation'];
+
+    if (data is! List) {
+      return [];
+    }
+
+    return data
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList();
+  }
+
   // いいねボタン
+  // ※現在は画面内だけの変更。Djangoへの保存処理は未接続。
   void toggleLike() {
     setState(() {
       isLiked = !isLiked;
@@ -150,28 +203,21 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
     });
   }
 
-  // フォローボタンが押されたときの処理。
-  // isFollowing の true/false を切り替えて、ボタンの表示を更新します。
-  // ※現在は画面内だけの仮処理で、フォロー情報はDBに保存されません。
   // フォローボタン
+  // ※現在は画面内だけの変更。Djangoへの保存処理は未接続。
   void toggleFollow() {
     setState(() {
       isFollowing = !isFollowing;
     });
   }
 
-  // コメント送信時の処理。
-  // 入力欄の前後の空白を trim() で取り除いてから内容を確認します。
-  // ※現在はローカルの comments リストに追加するだけで、Djangoには送信しません。
   // コメント投稿
+  // ※現在は画面内だけの変更。Djangoへの保存処理は未接続。
   void addComment() {
     final text = _commentController.text.trim();
 
-    // 空文字、または空白だけのコメントは追加せずに処理を終了します。
     if (text.isEmpty) return;
 
-    // setState() 内でリストを更新すると、コメント一覧が再描画されます。
-    // insert(0, ...) はリストの先頭に追加するため、新しいコメントが一番上に表示されます。
     setState(() {
       comments.insert(0, {
         'name': 'あなた',
@@ -183,72 +229,107 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
       _commentController.clear();
     });
 
-    // キーボードにフォーカスが残っている場合は解除し、入力後にキーボードを閉じます。
     FocusScope.of(context).unfocus();
   }
 
-  // Flutterが画面を描画するときに呼び出すメソッド。
-  // Scaffoldを画面の土台にし、ヘッダーとスクロール可能な本文を縦方向に配置します。
+  // 画面表示
   @override
   Widget build(BuildContext context) {
-    // ナビ付きの枠に、この画面の中身を渡す(詳細画面でも「作品」を選択中にする)
-    return Navbar(
-      selectedIndex: NavIndex.work,
-      child: Scaffold(
+    return Scaffold(
       backgroundColor: bg,
       body: SafeArea(
         child: Column(
           children: [
-            // 上部の戻るボタン
             _buildHeader(),
 
-            // 画面本体
-            // Expanded は残りの縦スペースを本文に割り当てます。
-            // SingleChildScrollView により、画面の高さを超える内容も上下にスクロールできます。
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 12,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 作品のタイトル・投稿者・ジャンル・いいね等を表示する部品。
-                    // 表示処理を別メソッドに分けることで build() を読みやすくしています。
-                    _buildWorkInfo(),
+              child: FutureBuilder<Map<String, dynamic>>(
+                future: _detailFuture,
+                builder: (context, snapshot) {
+                  // 読み込み中
+                  if (snapshot.connectionState ==
+                      ConnectionState.waiting) {
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        color: orange,
+                      ),
+                    );
+                  }
 
-                    const SizedBox(height: 24),
+                  // エラー
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              color: orange,
+                              size: 40,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              '作品情報の取得に失敗しました。\n'
+                              '${snapshot.error}',
+                              style: const TextStyle(
+                                color: mainText,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: () {
+                                setState(() {
+                                  _detailFuture = _loadWorkDetail();
+                                });
+                              },
+                              child: const Text('再読み込み'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
 
-                    // Djangoから受け取った work_detail を作品本文として表示する部品。
-                    _buildWorkContent(),
+                  // 取得成功
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 12,
+                    ),
+                    child: Column(
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
+                      children: [
+                        _buildWorkInfo(),
 
-                    const SizedBox(height: 32),
+                        const SizedBox(height: 24),
 
-                    // 現在はサンプルデータを使って関連作品を表示する部品。
-                    _buildRelatedWorks(),
+                        _buildWorkContent(),
 
-                    const SizedBox(height: 32),
+                        const SizedBox(height: 32),
 
-                    // コメント入力欄。
-        // controller を指定することで addComment() から入力文字列を取得できます。
-        // キーボードの送信操作でも addComment() が呼ばれます。
-        // コメント入力欄とコメント一覧を表示する部品。
-                    _buildComments(),
+                        _buildRelatedWorks(),
 
-                    const SizedBox(height: 30),
-                  ],
-                ),
+                        const SizedBox(height: 32),
+
+                        _buildComments(),
+
+                        const SizedBox(height: 30),
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
           ],
         ),
       ),
-    ));
+    );
   }
 
-  // 画面上部のヘッダーを作成するメソッド。
-  // 戻る操作を押すと Navigator.pop() で直前の画面へ戻ります。
   // ヘッダー
   Widget _buildHeader() {
     return Container(
@@ -282,8 +363,6 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
     );
   }
 
-  // 作品の基本情報をまとめて表示するメソッド。
-  // アイコン、タイトル、ジャンル、投稿者、フォロー、閲覧数、いいねを配置します。
   // 作品情報
   Widget _buildWorkInfo() {
     return Column(
@@ -300,8 +379,6 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
                 orange,
                 Color(0xFF713A2C),
               ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
             ),
           ),
           child: const Icon(
@@ -335,16 +412,17 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
         // 投稿者・フォロー
         Row(
           children: [
-            CircleAvatar(
+            const CircleAvatar(
               radius: 18,
               backgroundColor: orange,
-              child: const Icon(
+              child: Icon(
                 Icons.person,
                 color: bg,
                 size: 21,
               ),
             ),
             const SizedBox(width: 10),
+
             Expanded(
               child: Text(
                 author,
@@ -354,8 +432,7 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
                 ),
               ),
             ),
-            // 押すと toggleFollow() を実行します。
-            // isFollowing の状態によって「フォロー」「フォロー中」を切り替えます。
+
             OutlinedButton(
               onPressed: toggleFollow,
               style: OutlinedButton.styleFrom(
@@ -372,26 +449,24 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
 
         const SizedBox(height: 14),
 
-        // 閲覧数とコメント数の表示。
-        // 現在は固定文字列なので、実データに連動していません。
-        // 閲覧数・コメント数
-        const Text(
-          '閲覧 8.4万 ・ コメント 3',
-          style: TextStyle(
+        // 投稿日
+        Text(
+          '投稿日: ${_fields['created_at'] ?? '不明'}',
+          style: const TextStyle(
             color: subText,
-            fontSize: 13,
+            fontSize: 12,
           ),
         ),
 
         const SizedBox(height: 16),
 
-        // いいねボタン。
-        // isLiked に応じてハートアイコンの形と色を変更し、件数を表示します。
         // いいねボタン
         OutlinedButton.icon(
           onPressed: toggleLike,
           icon: Icon(
-            isLiked ? Icons.favorite : Icons.favorite_border,
+            isLiked
+                ? Icons.favorite
+                : Icons.favorite_border,
             color: isLiked ? orange : mainText,
             size: 17,
           ),
@@ -415,8 +490,6 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
     );
   }
 
-  // ジャンル名を小さなラベルとして表示する共通部品。
-  // 引数 value に「小説」「画像」「動画」などの文字列を受け取ります。
   // ジャンル表示
   Widget _genreLabel(String value) {
     return Container(
@@ -438,26 +511,149 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
     );
   }
 
-  // 作品本文を表示するメソッド。
-  // detail が空なら未登録メッセージを表示し、値があればその本文を表示します。
   // 作品本文
   Widget _buildWorkContent() {
+    final content = mainContent;
+
     return SizedBox(
       width: double.infinity,
-      child: Text(
-        detail.isEmpty ? '作品本文はまだ登録されていません。' : detail,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '作品内容',
+            style: TextStyle(
+              color: subText,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // 作品説明
+          if (detail.isNotEmpty)
+            Text(
+              detail,
+              style: const TextStyle(
+                color: mainText,
+                fontSize: 15,
+                height: 2.1,
+              ),
+            ),
+
+          if (detail.isEmpty)
+            const Text(
+              '作品説明は登録されていません。',
+              style: TextStyle(
+                color: subText,
+                fontSize: 14,
+              ),
+            ),
+
+          const SizedBox(height: 16),
+
+          // 文字作品
+          if (workType == 1)
+            Text(
+              content?.toString().isNotEmpty == true
+                  ? content.toString()
+                  : '本文はまだ登録されていません。',
+              style: const TextStyle(
+                color: mainText,
+                fontSize: 15,
+                height: 2.1,
+              ),
+            ),
+
+          // 画像作品
+          if (workType == 2)
+            _buildImages(content),
+
+          // 動画作品
+          if (workType == 3)
+            _buildMovie(content),
+        ],
+      ),
+    );
+  }
+
+  // 画像作品の表示
+  Widget _buildImages(dynamic content) {
+    if (content is! List || content.isEmpty) {
+      return const Text(
+        '画像は登録されていません。',
+        style: TextStyle(color: subText),
+      );
+    }
+
+    return Column(
+      children: content.map<Widget>((imageData) {
+        if (imageData is! Map) {
+          return const SizedBox.shrink();
+        }
+
+        final imageUrl =
+            imageData['main']?.toString() ?? '';
+
+        if (imageUrl.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.network(
+              imageUrl,
+              width: double.infinity,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                return const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text(
+                    '画像を表示できません。',
+                    style: TextStyle(color: subText),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  // 動画作品の表示
+  Widget _buildMovie(dynamic content) {
+    final movieUrl = content?.toString() ?? '';
+
+    if (movieUrl.isEmpty) {
+      return const Text(
+        '動画は登録されていません。',
+        style: TextStyle(color: subText),
+      );
+    }
+
+    // URLを表示するところまで対応。
+    // 実際の動画再生には動画プレイヤーの追加が必要。
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: card,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: SelectableText(
+        movieUrl,
         style: const TextStyle(
           color: mainText,
-          fontSize: 15,
-          height: 2.1,
+          fontSize: 13,
         ),
       ),
     );
   }
 
-  // 関連作品の一覧を表示するメソッド。
-  // relatedWorks の各要素を map() でWidgetに変換し、... で children に展開します。
-  // 現在「見る」ボタンは画面遷移せず、未接続であることをSnackBarで知らせます。
   // 関連作品
   Widget _buildRelatedWorks() {
     return Column(
@@ -471,10 +667,18 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
             fontWeight: FontWeight.bold,
           ),
         ),
+
         const SizedBox(height: 10),
 
-        // relatedWorks の件数分だけ、作品カードに相当するWidgetを生成します。
-        // work にはリスト内の1作品分のMapが入ります。
+        if (relatedWorks.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Text(
+              '関連作品はありません。',
+              style: TextStyle(color: subText),
+            ),
+          ),
+
         ...relatedWorks.map((work) {
           return Container(
             padding: const EdgeInsets.symmetric(vertical: 12),
@@ -490,12 +694,7 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
                   height: 45,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
-                    gradient: const LinearGradient(
-                      colors: [
-                        Color(0xFF78805A),
-                        Color(0xFF473D24),
-                      ],
-                    ),
+                    color: card,
                   ),
                   child: const Icon(
                     Icons.star_border,
@@ -503,51 +702,34 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
                     size: 26,
                   ),
                 ),
+
                 const SizedBox(width: 14),
 
                 Expanded(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
                     children: [
                       Text(
-                        work['title']!,
+                        work['title']?.toString() ??
+                            'タイトルなし',
                         style: const TextStyle(
                           color: mainText,
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),
                       ),
+
                       const SizedBox(height: 5),
+
                       Text(
-                        '${work['author']} ・ 閲覧 ${work['views']}',
+                        work['user']?.toString() ?? '投稿者',
                         style: const TextStyle(
                           color: subText,
                           fontSize: 12,
                         ),
                       ),
                     ],
-                  ),
-                ),
-
-                ElevatedButton(
-                  // 関連作品の詳細画面への遷移はまだ実装していません。
-                  // そのため、押したときに未接続であることをSnackBarで表示します。
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('関連作品の画面遷移は未接続です。'),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: orange,
-                    foregroundColor: bg,
-                    shape: const StadiumBorder(),
-                    minimumSize: const Size(52, 34),
-                  ),
-                  child: const Text(
-                    '見る',
-                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -558,9 +740,8 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
     );
   }
 
-  // コメント入力欄と投稿済みコメントを表示するメソッド。
-  // TextField と送信ボタンを横並びにし、その下に comments の内容を一覧表示します。
   // コメント欄
+  // ※コメントは現在Djangoとは接続していません。
   Widget _buildComments() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -587,6 +768,7 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
                 style: TextStyle(color: bg),
               ),
             ),
+
             const SizedBox(width: 10),
 
             Expanded(
@@ -601,7 +783,8 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
                   hintStyle: const TextStyle(color: subText),
                   filled: true,
                   fillColor: card,
-                  contentPadding: const EdgeInsets.symmetric(
+                  contentPadding:
+                      const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 12,
                   ),
@@ -630,7 +813,9 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
                 backgroundColor: orange,
                 foregroundColor: bg,
                 shape: const StadiumBorder(),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                ),
               ),
               child: const Text('送信'),
             ),
@@ -639,8 +824,6 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
 
         const SizedBox(height: 18),
 
-        // comments の各コメントを画面部品に変換して表示します。
-        // comment には name/time/text/initial の各項目が入っています。
         // コメント一覧
         ...comments.map((comment) {
           return Container(
@@ -660,32 +843,36 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
                           ? const Color(0xFF7794C4)
                           : orange,
                   child: Text(
-                    comment['initial']!,
+                    comment['initial'] ?? '',
                     style: const TextStyle(
                       color: bg,
                       fontSize: 13,
                     ),
                   ),
                 ),
+
                 const SizedBox(width: 12),
 
                 Expanded(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
                           Text(
-                            comment['name']!,
+                            comment['name'] ?? '',
                             style: const TextStyle(
                               color: mainText,
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
+
                           const SizedBox(width: 8),
+
                           Text(
-                            comment['time']!,
+                            comment['time'] ?? '',
                             style: const TextStyle(
                               color: subText,
                               fontSize: 11,
@@ -693,9 +880,11 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
                           ),
                         ],
                       ),
+
                       const SizedBox(height: 7),
+
                       Text(
-                        comment['text']!,
+                        comment['text'] ?? '',
                         style: const TextStyle(
                           color: mainText,
                           fontSize: 13,
