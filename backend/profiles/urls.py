@@ -1,6 +1,6 @@
 from django.urls import path
-from Proflies.views.userProfileView import userProfileView 
+from profiles.views.userProfileView import userProfileView  # フォルダ名は実際のアプリ名に合わせてください
 
-uslpatterns = [
-    path("userprofiles/",userProfileView,name="userprofiles"),
+urlpatterns = [
+    path("userprofiles/<str:user_id>/", userProfileView, name="user_profile"),
 ]
