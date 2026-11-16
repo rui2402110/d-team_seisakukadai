@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'timeline',
     'work',
     'community',
+    'profiles'
 ]
 
 MIDDLEWARE = [

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'component/navbar.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class Profile extends StatefulWidget {
   const Profile({super.key});
@@ -15,6 +16,13 @@ class _ProfileState extends State<Profile>
     length: 5, //タブ数
     vsync: this, //アニメーション同期用
   );
+  // 現在ログイン中のユーザーを取得
+  User? user = FirebaseAuth.instance.currentUser;
+
+  Future<Map<String, dynamic>> _UserProfile() async {
+    // Django APIから作品一覧を取得
+    return _UserProfile();
+  }
 
   @override
   void dispose() {
