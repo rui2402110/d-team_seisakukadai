@@ -1,5 +1,6 @@
-
 import 'package:flutter/material.dart';
+
+import '../repository/work_repository.dart';
 
 class WorkPostPage extends StatefulWidget {
   const WorkPostPage({super.key});
@@ -17,6 +18,9 @@ class _WorkPostPageState extends State<WorkPostPage> {
   static const Color subTextColor = Color(0xFFB5A18A);
   static const Color lineColor = Color(0xFF49382A);
 
+  // Repository
+  final WorkRepository _workRepository = WorkRepository();
+
   // 入力コントローラー
   final TextEditingController _titleController =
       TextEditingController();
@@ -31,8 +35,20 @@ class _WorkPostPageState extends State<WorkPostPage> {
   // 選択したファイル名（画面表示用）
   String? _fileName;
 
-  // 関連作品
-  final List<String> _relatedWorks = [];
+  // Djangoから取得した全作品
+  List<Map<String, dynamic>> _allWorks = [];
+
+  // 選択した関連作品ID
+  final List<int> _relatedWorkIds = [];
+
+  // 作品一覧読み込み状態
+  bool _isLoadingWorks = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAllWorks();
+  }
 
   @override
   void dispose() {
@@ -52,6 +68,32 @@ class _WorkPostPageState extends State<WorkPostPage> {
     );
   }
 
+  // Djangoから全作品を取得
+  Future<void> _loadAllWorks() async {
+    setState(() {
+      _isLoadingWorks = true;
+    });
+
+    try {
+      final works = await _workRepository.getAllWorks();
+
+      if (!mounted) return;
+
+      setState(() {
+        _allWorks = works;
+        _isLoadingWorks = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoadingWorks = false;
+      });
+
+      _showMessage('作品一覧の取得に失敗しました：$e');
+    }
+  }
+
   // ファイル選択ボタン（画面のみ）
   void _selectFile() {
     _showMessage('ファイル選択機能は未実装です');
@@ -59,59 +101,88 @@ class _WorkPostPageState extends State<WorkPostPage> {
 
   // 関連作品追加
   void _addRelatedWork() {
-    final List<String> sampleWorks = [
-      '灰と星屑',
-      'サイレント・チャプター',
-      '夜想曲のリベルタ',
-    ];
+    if (_isLoadingWorks) {
+      _showMessage('作品一覧を読み込み中です');
+      return;
+    }
+
+    if (_allWorks.isEmpty) {
+      _showMessage('追加できる作品がありません');
+      return;
+    }
 
     showDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: cardColor,
-          title: const Text(
-            '関連作品を追加',
-            style: TextStyle(color: mainTextColor),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: sampleWorks.map((work) {
-              final selected = _relatedWorks.contains(work);
-
-              return CheckboxListTile(
-                title: Text(
-                  work,
-                  style: const TextStyle(color: mainTextColor),
-                ),
-                value: selected,
-                activeColor: orangeColor,
-                checkColor: bgColor,
-                onChanged: (value) {
-                  setState(() {
-                    if (value == true) {
-                      if (!_relatedWorks.contains(work)) {
-                        _relatedWorks.add(work);
-                      }
-                    } else {
-                      _relatedWorks.remove(work);
-                    }
-                  });
-                  Navigator.pop(context);
-                  _addRelatedWork();
-                },
-              );
-            }).toList(),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text(
-                '閉じる',
-                style: TextStyle(color: orangeColor),
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, dialogSetState) {
+            return AlertDialog(
+              backgroundColor: cardColor,
+              title: const Text(
+                '関連作品を追加',
+                style: TextStyle(color: mainTextColor),
               ),
-            ),
-          ],
+              content: SizedBox(
+                width: double.maxFinite,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: _allWorks.length,
+                  itemBuilder: (context, index) {
+                    final work = _allWorks[index];
+
+                    final int? workId =
+                        int.tryParse(work['id'].toString());
+
+                    final String title =
+                        work['title']?.toString() ?? 'タイトルなし';
+
+                    if (workId == null) {
+                      return const SizedBox.shrink();
+                    }
+
+                    final bool selected =
+                        _relatedWorkIds.contains(workId);
+
+                    return CheckboxListTile(
+                      title: Text(
+                        title,
+                        style: const TextStyle(
+                          color: mainTextColor,
+                        ),
+                      ),
+                      value: selected,
+                      activeColor: orangeColor,
+                      checkColor: bgColor,
+                      onChanged: (value) {
+                        dialogSetState(() {
+                          if (value == true) {
+                            if (!_relatedWorkIds.contains(workId)) {
+                              _relatedWorkIds.add(workId);
+                            }
+                          } else {
+                            _relatedWorkIds.remove(workId);
+                          }
+                        });
+
+                        setState(() {});
+                      },
+                    );
+                  },
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(dialogContext);
+                  },
+                  child: const Text(
+                    '閉じる',
+                    style: TextStyle(color: orangeColor),
+                  ),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -156,14 +227,15 @@ class _WorkPostPageState extends State<WorkPostPage> {
     );
   }
 
-  // 投稿ボタン（API通信なし）
+  // 投稿ボタン
   void _postWork() {
     if (_titleController.text.trim().isEmpty) {
       _showMessage('タイトルを入力してください');
       return;
     }
 
-    if (_workType == 1 && _bodyController.text.trim().isEmpty) {
+    if (_workType == 1 &&
+        _bodyController.text.trim().isEmpty) {
       _showMessage('本文を入力してください');
       return;
     }
@@ -173,7 +245,9 @@ class _WorkPostPageState extends State<WorkPostPage> {
       return;
     }
 
-    _showMessage('現在は画面のみの実装です。投稿機能は未実装です。');
+    _showMessage(
+      '投稿処理はDjango側のPOST実装後に利用できます',
+    );
   }
 
   @override
@@ -213,7 +287,6 @@ class _WorkPostPageState extends State<WorkPostPage> {
 
               const SizedBox(height: 24),
 
-              // タイトル
               const Text(
                 '作品投稿',
                 style: TextStyle(
@@ -306,9 +379,9 @@ class _WorkPostPageState extends State<WorkPostPage> {
               // 作品種類ごとの入力欄
               if (_workType == 1) ...[
                 _sectionTitle('本文'),
+
                 const SizedBox(height: 8),
 
-                // 編集ツール
                 Row(
                   children: [
                     _editorButton(
@@ -428,15 +501,48 @@ class _WorkPostPageState extends State<WorkPostPage> {
                 ),
               ),
 
-              if (_relatedWorks.isNotEmpty) ...[
+              if (_isLoadingWorks) ...[
+                const SizedBox(height: 12),
+                const Row(
+                  children: [
+                    SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: orangeColor,
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    Text(
+                      '作品一覧を読み込み中...',
+                      style: TextStyle(
+                        color: subTextColor,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+
+              if (_relatedWorkIds.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: _relatedWorks.map((work) {
+                  children: _relatedWorkIds.map((workId) {
+                    final work = _allWorks.firstWhere(
+                      (work) =>
+                          int.tryParse(work['id'].toString()) ==
+                          workId,
+                    );
+
+                    final title =
+                        work['title']?.toString() ?? 'タイトルなし';
+
                     return Chip(
                       label: Text(
-                        work,
+                        title,
                         style: const TextStyle(
                           color: mainTextColor,
                         ),
@@ -445,7 +551,7 @@ class _WorkPostPageState extends State<WorkPostPage> {
                       deleteIconColor: subTextColor,
                       onDeleted: () {
                         setState(() {
-                          _relatedWorks.remove(work);
+                          _relatedWorkIds.remove(workId);
                         });
                       },
                     );
