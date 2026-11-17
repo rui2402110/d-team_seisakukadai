@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../core/api_client.dart';
+
 import '../../component/navbar.dart';
+import '../../core/api_client.dart';
 import '../../core/kakko_theme.dart';
 import '../repository/work_repository.dart';
+import 'work_like.dart';
 
 class WorkDetailPage extends StatefulWidget {
   // 作品一覧画面から受け取る作品情報
@@ -84,6 +86,9 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
     // いいね数を取得
     likeCount = (data['likecount'] as num?)?.toInt() ?? 0;
 
+    // 自分がいいね済みか(Django側が返す場合のみ)
+    isLiked = data['liked'] == true;
+
     // 取得したデータを保存
     _detailData = data;
 
@@ -153,12 +158,45 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
   }
 
   // いいねボタン
-  // ※現在は画面内だけの変更。Djangoへの保存処理は未接続。
-  void toggleLike() {
+  // 先に画面を更新し、Djangoに保存する。失敗したら元に戻す。
+  bool _likeBusy = false;
+
+  Future<void> toggleLike() async {
+    // 通信中の連打を防ぐ
+    if (_likeBusy) return;
+
+    final workId = widget.work['id'] ?? widget.work['pk'];
+    if (workId == null) return;
+
+    _likeBusy = true;
+    final prevLiked = isLiked;
+    final prevCount = likeCount;
+
     setState(() {
       isLiked = !isLiked;
       likeCount += isLiked ? 1 : -1;
     });
+
+    try {
+      // Djangoに保存し、サーバー上の正しい値で画面を合わせる
+      final res = await WorkRepository().toggleWorkLike(workId);
+      if (!mounted) return;
+      setState(() {
+        isLiked = res['liked'] == true;
+        likeCount = (res['likecount'] as num?)?.toInt() ?? likeCount;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        isLiked = prevLiked;
+        likeCount = prevCount;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('いいねの更新に失敗しました\n$e')),
+      );
+    } finally {
+      _likeBusy = false;
+    }
   }
 
   // フォローボタン
@@ -444,7 +482,31 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
           ),
         ),
 
-        const SizedBox(height: 20),
+        // いいね情報ページへ
+        TextButton.icon(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => WorkLikePage(work: widget.work),
+              ),
+            );
+          },
+          icon: const Icon(
+            Icons.bar_chart,
+            color: KakkoColors.muted,
+            size: 16,
+          ),
+          label: const Text(
+            'いいね情報を見る',
+            style: TextStyle(
+              color: KakkoColors.muted,
+              fontSize: 12,
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 12),
         const Divider(color: line),
       ],
     );
