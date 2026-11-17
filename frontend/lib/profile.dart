@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'component/navbar.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'profile_repository.dart';
+import 'package:intl/intl.dart';
 
 class Profile extends StatefulWidget {
   const Profile({super.key});
@@ -17,18 +17,24 @@ class _ProfileState extends State<Profile>
     length: 5, //タブ数
     vsync: this, //アニメーション同期用
   );
+  String? user_id;
   late Future<Map<String, dynamic>> _userProfileFuture;
-  // 現在ログイン中のユーザーを取得
-  User? user = FirebaseAuth.instance.currentUser;
 
-  Future<Map<String, dynamic>> _UserProfile(user_id) async {
-    // Django APIから作品一覧を取得
-    return ProfileRepository().getUserProfile(user_id);
+  Future<Map<String, dynamic>> _UserProfile() async {
+    // Django APIからプロフィールを取得
+    return await ProfileRepository().getUserProfile();
   }
+
   @override
   void initState(){
     super.initState();
-    _userProfileFuture = _UserProfile(user!.uid);
+    // if(user_id == null ){
+    //   _userProfileFuture = _UserProfile();
+    // }else{
+    //   _userProfileFuture = _UserProfile(user_id);
+    // }
+    _userProfileFuture = _UserProfile();
+    
   }
 
   @override
@@ -39,194 +45,238 @@ class _ProfileState extends State<Profile>
 
   @override
   Widget build(BuildContext context) {
-    // ナビ付きの枠に、この画面の中身を渡す(プロフィールはナビのどの項目も選択しない)
     return Navbar(
       selectedIndex: null,
       child: SizedBox(
         width: double.infinity,
         child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(10),
-                child: Row(
-                  spacing: 10,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new),
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.blue, // 背景色
-                        foregroundColor: Colors.white, // アイコンの色
-                      ),
-                      splashRadius: 20.0,
-                      onPressed: () => Navigator.of(context).maybePop(),
+          child: FutureBuilder<Map<String, dynamic>>(
+            future: _userProfileFuture,
+            builder: (context, snapshot) {
+              // Loading
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              // Error
+              if (snapshot.hasError) {
+                return Center(
+                  child: Text('エラーが発生しました:\n${snapshot.error}'),
+                );
+              }
+
+              // データが取得できなかった
+              if (!snapshot.hasData || snapshot.data == null) {
+                return const Center(child: Text('データが見つかりません'));
+              }
+
+              // データ取得
+              final data = snapshot.data!;
+              final user = data['user'];
+              final bool isMe = data['is_me'];
+              final DateTime d = DateTime.parse(user['created_at']);
+
+              // アイコンURLの取得（nullならデフォルトや空文字）
+              final String iconUrl = user['icon_url'] ?? '';
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Row(
+                      spacing: 10,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back_ios_new),
+                          style: IconButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                            foregroundColor: Colors.white,
+                          ),
+                          splashRadius: 20.0,
+                          onPressed: () => Navigator.of(context).maybePop(),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(user['name'] ?? "", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            const Text("投稿128件", style: TextStyle(color: Colors.grey, fontSize: 12)),
+                          ],
+                        )
+                      ],
                     ),
-                    const Column(
+                  ),
+                  //----------------------------------------------------
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 50),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          height: 100,
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.deepOrange,
+                                Colors.black,
+                              ],
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 50,
+                          left: 10,
+                          child: CircleAvatar(
+                            radius: 50,
+                            backgroundImage: iconUrl.isNotEmpty 
+                                ? NetworkImage(iconUrl) 
+                                : const NetworkImage('https://picsum.photos/200/300') as ImageProvider,
+                          ),
+                        ),
+                        if (isMe)...{
+                          Positioned(
+                            right: 10,
+                            top: 110,
+                            child: ElevatedButton(
+                              onPressed: () {}, 
+                              child: const Text("プロフィールを編集"),
+                            ),
+                          )
+                        } else...{
+                          Positioned(
+                            right: 10,
+                            top: 110,
+                            child: ElevatedButton(
+                              onPressed: () {}, 
+                              child: const Text("フォロー"),
+                            ),
+                          )
+                        }
+                      ],
+                    ),
+                  ),
+                  //-----------------------------------------------------
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("あなた", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                        Text("投稿128件", style: TextStyle(color: Colors.grey, fontSize: 12)),
-                      ],
-                    )
-                  ],
-                ),
-              ),
-              //----------------------------------------------------
-              Container(
-                margin: const EdgeInsets.only(bottom: 50),
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Container(
-                      height: 100,
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Colors.deepOrange,
-                            Colors.black,
+                        // 名前
+                        Text(
+                          user['name'] ?? "",
+                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 2),
+                        // ユーザーID
+                        Text(
+                          "@${user['user_id'] ?? ""}",
+                          style: const TextStyle(color: Colors.grey, fontSize: 14),
+                        ),
+                        const SizedBox(height: 12),
+                        if(user['bio'] != null || user['bio'].isNotEmpty)
+                          // 自己紹介文
+                          Text(
+                            user['bio'] ?? "自己紹介はありません。",
+                            style: const TextStyle(height: 1.4),
+                            softWrap: true, 
+                          ),
+                        const SizedBox(height: 12),
+                        
+                        // ウェブサイト ＆ 利用開始日
+                        Wrap(
+                          spacing: 16,
+                          runSpacing: 8,
+                          children: [
+                            if (user['link'] != null && user['link'].toString().isNotEmpty)
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.link, size: 18, color: Colors.grey),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    user['link'],
+                                    style: const TextStyle(color: Colors.blue, fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
+                                const SizedBox(width: 4),
+                                Text(
+                   
+                                  ("${d.year}${d.month}から利用中" ?? ""),
+                                  style: const TextStyle(color: Colors.grey, fontSize: 13),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
-                      ),
-                    ),
-                    const Positioned(
-                      top: 50,
-                      left: 10,
-                      child: CircleAvatar(
-                        radius: 50,
-                        backgroundImage: NetworkImage(
-                          'https://picsum.photos/200/300',
+                        const SizedBox(height: 12),
+                        
+                        // フォロー / フォロワー数
+                        const Row(
+                          spacing: 16,
+                          children: [
+                            Row(
+                              spacing: 4,
+                              children: [
+                                Text("1", style: TextStyle(fontWeight: FontWeight.bold)),
+                                Text("フォロー中", style: TextStyle(color: Colors.grey, fontSize: 13)),
+                              ],
+                            ),
+                            Row(
+                              spacing: 4,
+                              children: [
+                                Text("0", style: TextStyle(fontWeight: FontWeight.bold)),
+                                Text("フォロワー", style: TextStyle(color: Colors.grey, fontSize: 13)),
+                              ],
+                            ),
+                          ],
                         ),
-                      ),
+                      ],
                     ),
-                    Positioned(
-                      right: 10,
-                      top: 110,
-                      child: ElevatedButton(
-                        onPressed: () {}, 
-                        child: const Text("プロフィールを編集"),
-                      ),
-                    )
-                  ],
-                ),
-              ),
-              //-----------------------------------------------------
-              // 【修正箇所】プロフィール詳細情報のレイアウト
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 名前 ＆ ID
-                    const Text(
-                      "あなた",
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 2),
-                    const Text(
-                      "@anata_kakko",
-                      style: TextStyle(color: Colors.grey, fontSize: 14),
-                    ),
-                    const SizedBox(height: 12),
-                    
-                    // 自己紹介文
-                    const Text(
-                      '''物語を読むのも書くのも好きです。灰と星屑、夜想曲のリベルタが今期のお気に入り。感想はいつでも大歓迎。''',
-                      style: TextStyle(height: 1.4),
-                    ),
-                    const SizedBox(height: 12),
-                    
-                    // ウェブサイト ＆ 利用開始日（アイコンとテキストを綺麗にペアリング）
-                    Wrap(
-                      spacing: 16,
-                      runSpacing: 8,
+                  ),
+                  const SizedBox(height: 16),
+                  //-----------------------------------------------------
+                  SizedBox(
+                    width: double.infinity,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: const [
-                            Icon(Icons.link, size: 18, color: Colors.grey),
-                            SizedBox(width: 4),
-                            Text(
-                              "https://www.o-hara.jp/",
-                              style: TextStyle(color: Colors.blue, fontSize: 13),
-                            ),
+                        TabBar(
+                          controller: _tabController,
+                          tabs: const [
+                            Tab(text: '投稿'),
+                            Tab(text: '返信'),
+                            Tab(text: 'メディア'),
+                            Tab(text: '作品'),
+                            Tab(text: 'いいね'),
                           ],
                         ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: const [
-                            Icon(Icons.calendar_today, size: 16, color: Colors.grey),
-                            SizedBox(width: 4),
-                            Text(
-                              "2023年4月から利用",
-                              style: TextStyle(color: Colors.grey, fontSize: 13),
-                            ),
-                          ],
-                        ),
+                        SizedBox(
+                          height: 300,
+                          child: TabBarView(
+                            controller: _tabController,
+                            children: const [
+                              Center(child: Text("投稿")),
+                              Center(child: Text("返信")),
+                              Center(child: Text("メディア")),
+                              Center(child: Text("作品")),
+                              Center(child: Text("いいね")),
+                            ],
+                          ),
+                        )
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    
-                    // フォロー / フォロワー数
-                    Row(
-                      spacing: 16,
-                      children: const [
-                        Row(
-                          spacing: 4,
-                          children: [
-                            Text("1", style: TextStyle(fontWeight: FontWeight.bold)),
-                            Text("フォロー中", style: TextStyle(color: Colors.grey, fontSize: 13)),
-                          ],
-                        ),
-                        Row(
-                          spacing: 4,
-                          children: [
-                            Text("0", style: TextStyle(fontWeight: FontWeight.bold)),
-                            Text("フォロワー", style: TextStyle(color: Colors.grey, fontSize: 13)),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              //-----------------------------------------------------
-              SizedBox(
-                width: double.infinity,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    TabBar(
-                      controller: _tabController,
-                      tabs: const [
-                        Tab(text: '投稿'),
-                        Tab(text: '返信'),
-                        Tab(text: 'メディア'),
-                        Tab(text: '作品'),
-                        Tab(text: 'いいね'),
-                      ],
-                    ),
-                    SizedBox(
-                      height: 300,
-                      child: TabBarView(
-                        controller: _tabController,
-                        children: [
-                          Text("投稿"),
-                          Text("返信"),
-                          Text("メディア"),
-                          Text("作品"),
-                          Text("いいね"),
-                        ],
-                      ),
-                    )
-                  ],
-                ),
-              )
-            ],
+                  )
+                ],
+              );
+            },
           ),
         ),
-      )
+      ),
     );
   }
 }

@@ -21,8 +21,8 @@ dependencies:
   firebase_core: ^3.6.0
   firebase_auth: ^5.3.1
 
-  #URL
-  url_launcher: ^6.3.3
+  #ISO 8601 ->datetime変換
+  intl: ^0.19.0
 
   # Django との通信
   http: ^1.2.2
