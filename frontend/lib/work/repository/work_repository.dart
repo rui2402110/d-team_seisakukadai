@@ -1,135 +1,131 @@
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 
 import '../../core/api_client.dart';
 
-// Djangoの作品APIとの通信を担当するクラス
 class WorkRepository {
+  // JSONレスポンスをMapに変換
+  Map<String, dynamic> _decodeResponse(http.Response response) {
+    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
 
-  // Djangoからフォロー作品とおすすめ作品を取得する
-  // ログイン確認とトークン取得はここで行う(画面側では行わない)
+    if (decoded is Map<String, dynamic>) {
+      return decoded;
+    }
+
+    throw Exception('サーバーから不正なデータが返されました');
+  }
+
+  // Firebase IDトークン取得
+  Future<String> _getToken() async {
+    final token = await ApiClient.idToken();
+
+    if (token.isEmpty) {
+  throw Exception('ログインしていません');
+}
+
+    return token;
+  }
+
+  // 作品メニュー取得
   Future<Map<String, dynamic>> getWorkMenu() async {
+    final token = await _getToken();
 
-    // ログイン中ユーザーのIDトークンを取得(未ログインなら ApiException)
-    final idToken = await ApiClient.idToken();
-
-    // Djangoの作品一覧APIにGETリクエストを送信する
-    final res = await http.get(
+    final response = await http.get(
       Uri.parse('${ApiClient.baseUrl}/work/workmenu/'),
-      
-      headers: ApiClient.headers(idToken),
+      headers: ApiClient.headers(token),
     );
 
-    // トークンが無効・期限切れの場合
-    if (res.statusCode == 401) {
-      throw ApiException('ログインの有効期限が切れました。もう一度ログインしてください');
+    if (response.statusCode == 401) {
+      throw Exception('認証に失敗しました');
     }
 
-    // HTTPステータスコードが200以外ならエラーにする
-    if (res.statusCode != 200) {
-      throw ApiException('作品の取得に失敗しました(${res.statusCode})');
+    if (response.statusCode != 200) {
+      throw Exception('作品メニューの取得に失敗しました');
     }
 
-    // Djangoから返されたJSONをMap形式に変換する
-    return jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+    return _decodeResponse(response);
   }
 
-  // Djangoから作品の詳細(workDetailViewの返す値)を取得する
-  // 返る値: pk / fields(user, title, work_type, work_detail, created_at)
-  //        / likecount / relation / Main
-  // ログイン確認とトークン取得はここで行う(画面側では行わない)
-  Future<Map<String, dynamic>> getWorkDetail(dynamic workId) async {
+  // 作品詳細取得
+  Future<Map<String, dynamic>> getWorkDetail(int workId) async {
+    final token = await _getToken();
 
-    // ログイン中ユーザーのIDトークンを取得(未ログインなら ApiException)
-    final idToken = await ApiClient.idToken();
-
-    // Djangoの作品詳細APIにGETリクエストを送信する
-    final res = await http.get(
+    final response = await http.get(
       Uri.parse('${ApiClient.baseUrl}/work/workdetail/$workId/'),
-      headers: ApiClient.headers(idToken),
+      headers: ApiClient.headers(token),
     );
 
-    // トークンが無効・期限切れの場合
-    if (res.statusCode == 401) {
-      throw ApiException('ログインの有効期限が切れました。もう一度ログインしてください');
+    if (response.statusCode == 401) {
+      throw Exception('認証に失敗しました');
     }
 
-    // 作品が存在しない場合
-    if (res.statusCode == 404) {
-      throw ApiException('作品が見つかりませんでした');
+    if (response.statusCode == 404) {
+      throw Exception('作品が見つかりません');
     }
 
-    // HTTPステータスコードが200以外ならエラーにする
-    if (res.statusCode != 200) {
-      throw ApiException('作品詳細の取得に失敗しました(${res.statusCode})');
+    if (response.statusCode != 200) {
+      throw Exception('作品詳細の取得に失敗しました');
     }
 
-    // Djangoから返されたJSONをMap形式に変換する
-    return jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+    return _decodeResponse(response);
   }
 
-  // Djangoから作品のいいね情報(workLikeViewの返す値)を取得する
-  // 返る値: pk / work(title, work_type, work_detail, created_at)
-  //        / user(user_id, name) / likecount / liked
-  // ログイン確認とトークン取得はここで行う(画面側では行わない)
-  Future<Map<String, dynamic>> getWorkLike(dynamic workId) async {
+  // いいね情報取得
+  Future<Map<String, dynamic>> getWorkLike(int workId) async {
+    final token = await _getToken();
 
-    // ログイン中ユーザーのIDトークンを取得(未ログインなら ApiException)
-    final idToken = await ApiClient.idToken();
-
-    // DjangoのいいねAPIにGETリクエストを送信する
-    final res = await http.get(
+    final response = await http.get(
       Uri.parse('${ApiClient.baseUrl}/work/worklike/$workId/'),
-      headers: ApiClient.headers(idToken),
+      headers: ApiClient.headers(token),
     );
 
-    // トークンが無効・期限切れの場合
-    if (res.statusCode == 401) {
-      throw ApiException('ログインの有効期限が切れました。もう一度ログインしてください');
+    if (response.statusCode != 200) {
+      throw Exception('いいね情報の取得に失敗しました');
     }
 
-    // 作品またはユーザーが存在しない場合
-    if (res.statusCode == 404) {
-      throw ApiException('作品またはユーザーが見つかりませんでした');
-    }
-
-    // HTTPステータスコードが200以外ならエラーにする
-    if (res.statusCode != 200) {
-      throw ApiException('いいね情報の取得に失敗しました(${res.statusCode})');
-    }
-
-    // Djangoから返されたJSONをMap形式に変換する
-    return jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+    return _decodeResponse(response);
   }
 
-  // いいねを切り替える(していなければ追加、していれば取り消し)
-  // 返る値は getWorkLike と同じ(likecount / liked など)
-  Future<Map<String, dynamic>> toggleWorkLike(dynamic workId) async {
+  // いいね切り替え
+  Future<Map<String, dynamic>> toggleWorkLike(int workId) async {
+    final token = await _getToken();
 
-    // ログイン中ユーザーのIDトークンを取得(未ログインなら ApiException)
-    final idToken = await ApiClient.idToken();
-
-    // DjangoのいいねAPIにPOSTリクエストを送信する
-    final res = await http.post(
+    final response = await http.post(
       Uri.parse('${ApiClient.baseUrl}/work/worklike/$workId/'),
-      headers: ApiClient.headers(idToken),
+      headers: ApiClient.headers(token),
     );
 
-    // トークンが無効・期限切れの場合
-    if (res.statusCode == 401) {
-      throw ApiException('ログインの有効期限が切れました。もう一度ログインしてください');
+    if (response.statusCode != 200) {
+      throw Exception('いいねの更新に失敗しました');
     }
 
-    // 作品またはユーザーが存在しない場合
-    if (res.statusCode == 404) {
-      throw ApiException('作品またはユーザーが見つかりませんでした');
+    return _decodeResponse(response);
+  }
+
+  // 全作品取得（関連作品選択用）
+  Future<List<Map<String, dynamic>>> getAllWorks() async {
+    final token = await _getToken();
+
+    final response = await http.get(
+      Uri.parse('${ApiClient.baseUrl}/work/workpost/'),
+      headers: ApiClient.headers(token),
+    );
+
+    if (response.statusCode == 401) {
+      throw Exception('認証に失敗しました');
     }
 
-    // HTTPステータスコードが200以外ならエラーにする
-    if (res.statusCode != 200) {
-      throw ApiException('いいねの更新に失敗しました(${res.statusCode})');
+    if (response.statusCode != 200) {
+      throw Exception('全作品の取得に失敗しました');
     }
 
-    return jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+    final data = _decodeResponse(response);
+
+    final List<dynamic> works = data['work'] ?? [];
+
+    return works.map((item) {
+      return Map<String, dynamic>.from(item as Map);
+    }).toList();
   }
 }
