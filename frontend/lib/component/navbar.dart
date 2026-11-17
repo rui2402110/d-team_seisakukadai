@@ -80,6 +80,7 @@ class Navbar extends StatelessWidget {
 
           // 広い画面: 左にサイドバー、右に画面の中身
           return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // kakko_Theme.dart を適用し、カラーを指定
               Theme(
@@ -100,7 +101,12 @@ class Navbar extends StatelessWidget {
                   ),
                 ),
               ),
-              Expanded(child: child),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.topLeft,
+                  child: child,
+                ),
+              ),
             ],
           );
         },
