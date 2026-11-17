@@ -4,15 +4,6 @@ from work.views.workDetailView import workDetailView
 
 urlpatterns = [
     path("workmenu/", workMenuView, name="workmenu"),
+     path("workdetail/<int:workid>/",workDetailView,name="work_detail"),
 ]
 
-from django.urls import path
-from . import views
-
-urlpatterns = [
-    path(
-        "workdetail/<int:workid>/",
-        views.workDetailView,
-        name="work_detail"
-    ),
-]

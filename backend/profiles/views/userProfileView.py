@@ -49,5 +49,5 @@ def userProfileView(request, user_id=None):
             "icon_url": target.icon_url,
             "created_at": target.created_at.isoformat(),
         },
-        "is_me": target.pk == me.pk,
+        "is_me": (target.pk == me.pk),
     })

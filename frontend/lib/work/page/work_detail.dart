@@ -1,9 +1,8 @@
-
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:http/http.dart' as http;
+import '../../core/api_client.dart';
+import '../../component/navbar.dart';
+import '../../core/kakko_theme.dart';
+import '../repository/work_repository.dart';
 
 class WorkDetailPage extends StatefulWidget {
   // 作品一覧画面から受け取る作品情報
@@ -19,20 +18,9 @@ class WorkDetailPage extends StatefulWidget {
 }
 
 class _WorkDetailPageState extends State<WorkDetailPage> {
-  // デザイン設定
-  static const Color bg = Color(0xFF2D2016);
-  static const Color card = Color(0xFF3A2A1B);
-  static const Color orange = Color(0xFFE9782B);
-  static const Color mainText = Color(0xFFE9D9C6);
-  static const Color subText = Color(0xFFB5A18A);
+  // 基本の色は core/kakko_theme.dart を使う。
+  // 区切り線の色だけ、この画面専用
   static const Color line = Color(0xFF49382A);
-
-  // DjangoサーバーのURL
-  // Androidエミュレーターの場合は10.0.2.2を使用
-  static const String _baseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:8000',
-  );
 
   // Djangoから取得する作品情報
   Map<String, dynamic>? _detailData;
@@ -82,46 +70,16 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
   }
 
   // Djangoから作品詳細を取得
+  // (ログイン確認・IDトークン取得・通信は WorkRepository の中で行う)
   Future<Map<String, dynamic>> _loadWorkDetail() async {
     // 一覧画面から作品IDを取得
     final workId = widget.work['id'] ?? widget.work['pk'];
 
     if (workId == null) {
-      throw Exception('作品IDがありません');
+      throw ApiException('作品IDがありません');
     }
 
-    // Firebaseログインユーザーを取得
-    final user = FirebaseAuth.instance.currentUser;
-
-    if (user == null) {
-      throw Exception('ログインしていません');
-    }
-
-    // Firebase IDトークンを取得
-    final idToken = await user.getIdToken();
-
-    // DjangoにGETリクエストを送信
-    final response = await http.get(
-      Uri.parse('$_baseUrl/work/workdetail/$workId/'),
-      headers: {
-        'Authorization': 'Bearer $idToken',
-        'Content-Type': 'application/json',
-      },
-    );
-
-    // 通信エラー
-    if (response.statusCode != 200) {
-      throw Exception(
-        '作品詳細の取得に失敗しました。\n'
-        'ステータスコード: ${response.statusCode}\n'
-        '${utf8.decode(response.bodyBytes)}',
-      );
-    }
-
-    // JSONをMapに変換
-    final data = jsonDecode(
-      utf8.decode(response.bodyBytes),
-    ) as Map<String, dynamic>;
+    final data = await WorkRepository().getWorkDetail(workId);
 
     // いいね数を取得
     likeCount = (data['likecount'] as num?)?.toInt() ?? 0;
@@ -235,8 +193,10 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
   // 画面表示
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: bg,
+    return Navbar(
+      selectedIndex: NavIndex.work,
+      child: Scaffold(
+      backgroundColor: KakkoColors.ink,
       body: SafeArea(
         child: Column(
           children: [
@@ -251,7 +211,7 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
                       ConnectionState.waiting) {
                     return const Center(
                       child: CircularProgressIndicator(
-                        color: orange,
+                        color: KakkoColors.accent,
                       ),
                     );
                   }
@@ -266,7 +226,7 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
                           children: [
                             const Icon(
                               Icons.error_outline,
-                              color: orange,
+                              color: KakkoColors.accent,
                               size: 40,
                             ),
                             const SizedBox(height: 12),
@@ -274,7 +234,7 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
                               '作品情報の取得に失敗しました。\n'
                               '${snapshot.error}',
                               style: const TextStyle(
-                                color: mainText,
+                                color: KakkoColors.paperText,
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -327,7 +287,7 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   // ヘッダー
@@ -346,14 +306,14 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
           children: [
             Icon(
               Icons.arrow_back,
-              color: subText,
+              color: KakkoColors.muted,
               size: 17,
             ),
             SizedBox(width: 5),
             Text(
               '作品',
               style: TextStyle(
-                color: subText,
+                color: KakkoColors.muted,
                 fontSize: 13,
               ),
             ),
@@ -376,14 +336,14 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
             borderRadius: BorderRadius.circular(15),
             gradient: const LinearGradient(
               colors: [
-                orange,
+                KakkoColors.accent,
                 Color(0xFF713A2C),
               ],
             ),
           ),
           child: const Icon(
             Icons.star_border,
-            color: mainText,
+            color: KakkoColors.paperText,
             size: 30,
           ),
         ),
@@ -398,7 +358,7 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
             Text(
               title,
               style: const TextStyle(
-                color: mainText,
+                color: KakkoColors.paperText,
                 fontSize: 23,
                 fontWeight: FontWeight.bold,
               ),
@@ -414,10 +374,10 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
           children: [
             const CircleAvatar(
               radius: 18,
-              backgroundColor: orange,
+              backgroundColor: KakkoColors.accent,
               child: Icon(
                 Icons.person,
-                color: bg,
+                color: KakkoColors.ink,
                 size: 21,
               ),
             ),
@@ -427,7 +387,7 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
               child: Text(
                 author,
                 style: const TextStyle(
-                  color: mainText,
+                  color: KakkoColors.paperText,
                   fontSize: 14,
                 ),
               ),
@@ -436,7 +396,7 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
             OutlinedButton(
               onPressed: toggleFollow,
               style: OutlinedButton.styleFrom(
-                foregroundColor: mainText,
+                foregroundColor: KakkoColors.paperText,
                 side: const BorderSide(color: line),
                 shape: const StadiumBorder(),
               ),
@@ -453,7 +413,7 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
         Text(
           '投稿日: ${_fields['created_at'] ?? '不明'}',
           style: const TextStyle(
-            color: subText,
+            color: KakkoColors.muted,
             fontSize: 12,
           ),
         ),
@@ -467,18 +427,18 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
             isLiked
                 ? Icons.favorite
                 : Icons.favorite_border,
-            color: isLiked ? orange : mainText,
+            color: isLiked ? KakkoColors.accent : KakkoColors.paperText,
             size: 17,
           ),
           label: Text(
             likeCount.toString(),
             style: const TextStyle(
-              color: mainText,
+              color: KakkoColors.paperText,
               fontWeight: FontWeight.bold,
             ),
           ),
           style: OutlinedButton.styleFrom(
-            backgroundColor: card,
+            backgroundColor: KakkoColors.inkSoft,
             side: const BorderSide(color: line),
             shape: const StadiumBorder(),
           ),
@@ -498,13 +458,13 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
         vertical: 3,
       ),
       decoration: BoxDecoration(
-        color: card,
+        color: KakkoColors.inkSoft,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         value,
         style: const TextStyle(
-          color: subText,
+          color: KakkoColors.muted,
           fontSize: 11,
         ),
       ),
@@ -523,7 +483,7 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
           const Text(
             '作品内容',
             style: TextStyle(
-              color: subText,
+              color: KakkoColors.muted,
               fontSize: 14,
               fontWeight: FontWeight.bold,
             ),
@@ -536,7 +496,7 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
             Text(
               detail,
               style: const TextStyle(
-                color: mainText,
+                color: KakkoColors.paperText,
                 fontSize: 15,
                 height: 2.1,
               ),
@@ -546,7 +506,7 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
             const Text(
               '作品説明は登録されていません。',
               style: TextStyle(
-                color: subText,
+                color: KakkoColors.muted,
                 fontSize: 14,
               ),
             ),
@@ -560,7 +520,7 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
                   ? content.toString()
                   : '本文はまだ登録されていません。',
               style: const TextStyle(
-                color: mainText,
+                color: KakkoColors.paperText,
                 fontSize: 15,
                 height: 2.1,
               ),
@@ -579,27 +539,34 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
   }
 
   // 画像作品の表示
+  // workDetailView は Main に1件分の値(URL文字列)を返す。
+  // リスト([{main: URL}, ...] や [URL, ...])で返ってきても表示できるようにしている
   Widget _buildImages(dynamic content) {
-    if (content is! List || content.isEmpty) {
+    final List<String> urls = [];
+
+    if (content is List) {
+      for (final item in content) {
+        final url = item is Map
+            ? item['main']?.toString()
+            : item?.toString();
+        if (url != null && url.isNotEmpty) urls.add(url);
+      }
+    } else if (content is Map) {
+      final url = content['main']?.toString();
+      if (url != null && url.isNotEmpty) urls.add(url);
+    } else if (content != null && content.toString().isNotEmpty) {
+      urls.add(content.toString());
+    }
+
+    if (urls.isEmpty) {
       return const Text(
         '画像は登録されていません。',
-        style: TextStyle(color: subText),
+        style: TextStyle(color: KakkoColors.muted),
       );
     }
 
     return Column(
-      children: content.map<Widget>((imageData) {
-        if (imageData is! Map) {
-          return const SizedBox.shrink();
-        }
-
-        final imageUrl =
-            imageData['main']?.toString() ?? '';
-
-        if (imageUrl.isEmpty) {
-          return const SizedBox.shrink();
-        }
-
+      children: urls.map<Widget>((imageUrl) {
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: ClipRRect(
@@ -613,7 +580,7 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
                   padding: EdgeInsets.all(16),
                   child: Text(
                     '画像を表示できません。',
-                    style: TextStyle(color: subText),
+                    style: TextStyle(color: KakkoColors.muted),
                   ),
                 );
               },
@@ -631,7 +598,7 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
     if (movieUrl.isEmpty) {
       return const Text(
         '動画は登録されていません。',
-        style: TextStyle(color: subText),
+        style: TextStyle(color: KakkoColors.muted),
       );
     }
 
@@ -641,13 +608,13 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: card,
+        color: KakkoColors.inkSoft,
         borderRadius: BorderRadius.circular(12),
       ),
       child: SelectableText(
         movieUrl,
         style: const TextStyle(
-          color: mainText,
+          color: KakkoColors.paperText,
           fontSize: 13,
         ),
       ),
@@ -662,7 +629,7 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
         const Text(
           '関連作品',
           style: TextStyle(
-            color: subText,
+            color: KakkoColors.muted,
             fontSize: 14,
             fontWeight: FontWeight.bold,
           ),
@@ -675,7 +642,7 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
             padding: EdgeInsets.symmetric(vertical: 16),
             child: Text(
               '関連作品はありません。',
-              style: TextStyle(color: subText),
+              style: TextStyle(color: KakkoColors.muted),
             ),
           ),
 
@@ -694,11 +661,11 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
                   height: 45,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
-                    color: card,
+                    color: KakkoColors.inkSoft,
                   ),
                   child: const Icon(
                     Icons.star_border,
-                    color: mainText,
+                    color: KakkoColors.paperText,
                     size: 26,
                   ),
                 ),
@@ -714,7 +681,7 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
                         work['title']?.toString() ??
                             'タイトルなし',
                         style: const TextStyle(
-                          color: mainText,
+                          color: KakkoColors.paperText,
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),
@@ -725,7 +692,7 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
                       Text(
                         work['user']?.toString() ?? '投稿者',
                         style: const TextStyle(
-                          color: subText,
+                          color: KakkoColors.muted,
                           fontSize: 12,
                         ),
                       ),
@@ -749,7 +716,7 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
         const Text(
           'コメント',
           style: TextStyle(
-            color: subText,
+            color: KakkoColors.muted,
             fontSize: 14,
             fontWeight: FontWeight.bold,
           ),
@@ -762,10 +729,10 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
           children: [
             const CircleAvatar(
               radius: 18,
-              backgroundColor: orange,
+              backgroundColor: KakkoColors.accent,
               child: Text(
                 'あ',
-                style: TextStyle(color: bg),
+                style: TextStyle(color: KakkoColors.ink),
               ),
             ),
 
@@ -775,14 +742,14 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
               child: TextField(
                 controller: _commentController,
                 style: const TextStyle(
-                  color: mainText,
+                  color: KakkoColors.paperText,
                   fontSize: 14,
                 ),
                 decoration: InputDecoration(
                   hintText: '感想を書く',
-                  hintStyle: const TextStyle(color: subText),
+                  hintStyle: const TextStyle(color: KakkoColors.muted),
                   filled: true,
-                  fillColor: card,
+                  fillColor: KakkoColors.inkSoft,
                   contentPadding:
                       const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -798,7 +765,7 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(30),
-                    borderSide: const BorderSide(color: orange),
+                    borderSide: const BorderSide(color: KakkoColors.accent),
                   ),
                 ),
                 onSubmitted: (_) => addComment(),
@@ -810,8 +777,8 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
             ElevatedButton(
               onPressed: addComment,
               style: ElevatedButton.styleFrom(
-                backgroundColor: orange,
-                foregroundColor: bg,
+                backgroundColor: KakkoColors.accent,
+                foregroundColor: KakkoColors.ink,
                 shape: const StadiumBorder(),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -841,11 +808,11 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
                   backgroundColor:
                       comment['name'] == 'りく'
                           ? const Color(0xFF7794C4)
-                          : orange,
+                          : KakkoColors.accent,
                   child: Text(
                     comment['initial'] ?? '',
                     style: const TextStyle(
-                      color: bg,
+                      color: KakkoColors.ink,
                       fontSize: 13,
                     ),
                   ),
@@ -863,7 +830,7 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
                           Text(
                             comment['name'] ?? '',
                             style: const TextStyle(
-                              color: mainText,
+                              color: KakkoColors.paperText,
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                             ),
@@ -874,7 +841,7 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
                           Text(
                             comment['time'] ?? '',
                             style: const TextStyle(
-                              color: subText,
+                              color: KakkoColors.muted,
                               fontSize: 11,
                             ),
                           ),
@@ -886,7 +853,7 @@ class _WorkDetailPageState extends State<WorkDetailPage> {
                       Text(
                         comment['text'] ?? '',
                         style: const TextStyle(
-                          color: mainText,
+                          color: KakkoColors.paperText,
                           fontSize: 13,
                           height: 1.6,
                         ),
