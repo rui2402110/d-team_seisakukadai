@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'component/navbar.dart';
-import 'profile_repository.dart';
+import '../../component/navbar.dart';
+import '../repository/profile_repository.dart';
 
 class Profile extends StatefulWidget {
   final String? user_id;

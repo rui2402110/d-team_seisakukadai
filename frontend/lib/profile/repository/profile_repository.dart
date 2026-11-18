@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-import 'core/api_client.dart';
+import '../../core/api_client.dart';
 
 // Djangoのプロフィールとの通信を担当するクラス
 class ProfileRepository {
@@ -47,4 +47,12 @@ class ProfileRepository {
     // Djangoから返されたJSONをMap形式に変換して返却
     return jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
   }
+
+  // フォロー
+  // Future<Map<String,dynamic>> followUser(user_id)async{
+  //   // ログイン中ユーザーのIDトークンを取得(未ログインなら ApiException)
+  //   final idToken = await ApiClient.idToken();
+    
+
+  // }
 }
