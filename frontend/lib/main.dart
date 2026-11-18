@@ -42,6 +42,7 @@ class KakkoApp extends StatelessWidget {
         '/setting': (_) => const Setting(),
         '/notification': (_) => const UserNotification(),
         '/profile': (_) => const Profile(),
+        '/profile_test': (_) => const Profile(user_id: 'd91b6d72962f'),
       },
     );
   }

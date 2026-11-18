@@ -5,7 +5,9 @@ import 'profile_repository.dart';
 import 'package:intl/intl.dart';
 
 class Profile extends StatefulWidget {
-  const Profile({super.key});
+  final String? user_id;
+  const Profile({super.key,this.user_id});
+  
 
   @override
   _ProfileState createState() => _ProfileState();
@@ -17,24 +19,30 @@ class _ProfileState extends State<Profile>
     length: 5, //タブ数
     vsync: this, //アニメーション同期用
   );
-  String? user_id;
   late Future<Map<String, dynamic>> _userProfileFuture;
 
-  Future<Map<String, dynamic>> _UserProfile() async {
+  String? get user_id => widget.user_id;
+
+  Future<Map<String, dynamic>> _UserProfile(String? user_id) async {
     // Django APIからプロフィールを取得
-    return await ProfileRepository().getUserProfile();
+    return await ProfileRepository().getUserProfile(user_id:user_id);
   }
 
   @override
   void initState(){
     super.initState();
-    // if(user_id == null ){
-    //   _userProfileFuture = _UserProfile();
-    // }else{
-    //   _userProfileFuture = _UserProfile(user_id);
-    // }
-    _userProfileFuture = _UserProfile();
+    _userProfileFuture = _UserProfile(user_id);
     
+  }
+
+  @override
+  void didUpdateWidget(covariant Profile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.user_id != widget.user_id) {
+      setState(() {
+        _userProfileFuture = _UserProfile(widget.user_id);
+      });
+    }
   }
 
   @override

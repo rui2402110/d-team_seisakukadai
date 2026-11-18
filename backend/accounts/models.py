@@ -1,6 +1,7 @@
 import uuid
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.db import models
+from django.conf import settings
 
 
 class UserManager(BaseUserManager):
@@ -28,3 +29,31 @@ class User(AbstractBaseUser):
         if not self.user_id:
             self.user_id = uuid.uuid4().hex[:12]
         super().save(*args, **kwargs)
+
+class Follow(models.Model):
+    # フォローする側
+    from_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE, 
+        related_name='following' 
+    )
+    # フォローされる側
+    to_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE, 
+        related_name='follower' 
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        # 同じユーザーを二重にフォローできないようにする制約
+        constraints = [
+            models.UniqueConstraint(
+                fields=['from_user', 'to_user'], 
+                name='unique_follow')
+        ]
+        verbose_name = 'フォロー関係'
+        verbose_name_plural = 'フォロー関係'
+
+    def __str__(self):
+        return f"{self.from_user.user_id} -> {self.to_user.user_id}"
