@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 
+import '../repository/community_repository.dart';
+
 import '../../component/navbar.dart';
 import '../../core/breakpoints.dart';
 
-/// コミュニティデータ
+/// Django APIから取得したコミュニティデータ
 class Community {
   final int id;
   final String name;
   final String work;
   final String description;
   final String members;
-  final bool isJoined;
+  final String iconUrl;
+  final int communityType;
   final IconData icon;
   final Color color;
 
@@ -20,10 +23,25 @@ class Community {
     required this.work,
     required this.description,
     required this.members,
-    required this.isJoined,
+    required this.iconUrl,
+    required this.communityType,
     required this.icon,
     required this.color,
   });
+
+  factory Community.fromJson(Map<String, dynamic> json) {
+    return Community(
+      id: (json['id'] as num).toInt(),
+      name: json['name']?.toString() ?? '',
+      work: json['target']?.toString() ?? '',
+      description: json['detail']?.toString() ?? '',
+      members: '${json['member_count'] ?? 0}人',
+      iconUrl: json['icon_url']?.toString() ?? '',
+      communityType: (json['community_type'] as num?)?.toInt() ?? 1,
+      icon: Icons.groups_outlined,
+      color: const Color(0xFF9B5134),
+    );
+  }
 }
 
 /// コミュニティメニュー画面
@@ -37,6 +55,8 @@ class CommunityMenuPage extends StatefulWidget {
 
 class _CommunityMenuPageState
     extends State<CommunityMenuPage> {
+
+  final CommunityRepository _repo = CommunityRepository();
 
   // 画面表示用のデータ
   List<Community> _trendCommunities = [];
@@ -57,7 +77,7 @@ class _CommunityMenuPageState
     _loadCommunities();
   }
 
-  /// コミュニティデータの取得
+  /// Repositoryからコミュニティ一覧を取得
   Future<void> _loadCommunities() async {
     setState(() {
       _loading = true;
@@ -65,73 +85,23 @@ class _CommunityMenuPageState
     });
 
     try {
-      // 仮データ（後でRepositoryから取得する）
-      final trends = [
-        const Community(
-          id: 1,
-          name: '灰と星屑 感想部',
-          work: '灰と星屑',
-          description: '',
-          members: '1.2万人',
-          isJoined: true,
-          icon: Icons.star_border,
-          color: Color(0xFF9B5134),
-        ),
-        const Community(
-          id: 2,
-          name: 'サイレント・チャプター部',
-          work: 'サイレント・チャプター',
-          description: '',
-          members: '8,400人',
-          isJoined: true,
-          icon: Icons.menu_book_outlined,
-          color: Color(0xFF64643B),
-        ),
-        const Community(
-          id: 3,
-          name: '夜想曲のリベルタを語る会',
-          work: '夜想曲のリベルタ',
-          description: '',
-          members: '6,201人',
-          isJoined: true,
-          icon: Icons.nightlight_round,
-          color: Color(0xFF3F5C87),
-        ),
-      ];
-
-      final recommends = [
-        const Community(
-          id: 4,
-          name: '花布の記憶 読書会',
-          work: '花布の記憶',
-          description: '灰と星屑 感想部と近いジャンルです',
-          members: '',
-          isJoined: false,
-          icon: Icons.local_florist_outlined,
-          color: Color(0xFF486A40),
-        ),
-      ];
-
-      // API通信を行う場合はここで取得する
-      // final trends = await _repo.getTrendCommunities();
-      // final recommends = await _repo.getRecommendCommunities();
-      // final muteWords = await _repo.getMuteWords();
+      final communityData = await _repo.getAllCommunities();
+      final communities = communityData
+          .map((data) => Community.fromJson(data))
+          .toList();
 
       if (!mounted) return;
-
       setState(() {
-        _trendCommunities = trends;
-        _recommendCommunities = recommends;
+        // 話題・おすすめの分類APIが未実装のため、全件を一覧に表示
+        _trendCommunities = communities;
+        _recommendCommunities = [];
         _muteWords = [];
       });
-
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
-
       setState(() {
-        _message = 'コミュニティの取得に失敗しました';
+        _message = 'コミュニティの取得に失敗しました: $e';
       });
-
     } finally {
       if (mounted) {
         setState(() => _loading = false);
@@ -240,11 +210,15 @@ class _CommunityMenuPageState
                   borderRadius:
                       BorderRadius.circular(14),
                 ),
-                child: Icon(
-                  community.icon,
-                  color: Colors.white,
-                  size: 28,
-                ),
+                clipBehavior: Clip.antiAlias,
+                child: community.iconUrl.isEmpty
+                    ? Icon(community.icon, color: Colors.white, size: 28)
+                    : Image.network(
+                        community.iconUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            Icon(community.icon, color: Colors.white, size: 28),
+                      ),
               ),
 
               const SizedBox(width: 16),
@@ -297,9 +271,7 @@ class _CommunityMenuPageState
                     Text(
                       community.description.isNotEmpty
                           ? community.description
-                          : '『${community.work}』 ・ '
-                            '${community.members} ・ '
-                            '参加中',
+                          : '『${community.work}』 ・ ${community.members}',
                       style: const TextStyle(
                         color: Color(0xFFBEA88E),
                         fontSize: 13,
@@ -311,7 +283,7 @@ class _CommunityMenuPageState
 
               const SizedBox(width: 12),
 
-              // 参加状態によってボタンを変更
+              // 参加状態の取得は未実装のため詳細画面へ遷移
               ElevatedButton(
                 onPressed: () =>
                     _openCommunity(community),
@@ -321,11 +293,7 @@ class _CommunityMenuPageState
                   foregroundColor: Colors.black,
                   shape: const StadiumBorder(),
                 ),
-                child: Text(
-                  community.isJoined
-                      ? '見る'
-                      : '参加する',
-                ),
+                child: const Text('見る'),
               ),
             ],
           ),
@@ -505,12 +473,12 @@ class _CommunityMenuPageState
 
                         const SizedBox(height: 32),
 
-                        // おすすめコミュニティ
-                        _communitySection(
-                          title: 'おすすめコミュニティ',
-                          communities:
-                              _recommendCommunities,
-                        ),
+                        // おすすめデータが取得できたときのみ表示
+                        if (_recommendCommunities.isNotEmpty)
+                          _communitySection(
+                            title: 'おすすめコミュニティ',
+                            communities: _recommendCommunities,
+                          ),
                       ],
                     ),
                   ),

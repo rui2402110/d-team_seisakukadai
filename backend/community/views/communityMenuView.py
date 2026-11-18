@@ -8,5 +8,5 @@ def communityMenuView(request):
     communityData = Community.objects.filter(pk=1)
     # JsonResponse = jsonで返り値を返す
     return JsonResponse({
-        "community":list(communityData.values)
+        "community":list(communityData.values())
     })
