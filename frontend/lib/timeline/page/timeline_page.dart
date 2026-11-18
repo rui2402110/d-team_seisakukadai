@@ -192,7 +192,7 @@ class _TimelineState extends State<Timeline>
   bool icons = false;
 
   Widget loadPost(){
-    return Text("ぽすとないよう");
+    return Text("aaaaa");
   }
 
   @override

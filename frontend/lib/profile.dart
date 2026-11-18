@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'component/navbar.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'profile_repository.dart';
-import 'package:intl/intl.dart';
 
 class Profile extends StatefulWidget {
   final String? user_id;
@@ -214,7 +212,7 @@ class _ProfileState extends State<Profile>
                                 const SizedBox(width: 4),
                                 Text(
                    
-                                  ("${d.year}${d.month}から利用中" ?? ""),
+                                  ("${d.year}年${d.month}月から利用中"),
                                   style: const TextStyle(color: Colors.grey, fontSize: 13),
                                 ),
                               ],
