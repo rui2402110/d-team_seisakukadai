@@ -266,13 +266,6 @@ class _TimelineState extends State<Timeline>
                                       icons = true;
                                     });
                                   },
-                                  // onTapOutside: (PointerDownEvent event) {
-                                  //   // 入力欄の外側がタップされたときに入力下部を非表示
-                                  //   FocusManager.instance.primaryFocus?.unfocus();
-                                  //   setState(() {
-                                  //     icons = false;
-                                  //   });
-                                  // },
                                 ),
                               ),
                             ]
