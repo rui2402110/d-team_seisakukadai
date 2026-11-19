@@ -1,15 +1,21 @@
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
-
+import logging
 from timeline.models import Post, PostLikes
+from community.models import CommunityMember
+from core.firebase import verify_id_token
+from accounts.models import User
+# ロガーの初期化（例外ログ出力用）
+logger = logging.getLogger(__name__)
 
-
+# 全コミュニティの投稿20件取得
 @require_GET
 def timelineView(request):
 
     posts = Post.objects.select_related(
         "user",
         "community"
+        # -:降順
     ).order_by("-createdAt")[:20]
 
     result = []
@@ -20,6 +26,7 @@ def timelineView(request):
             "post_id": post.pk,
             "name": post.user.name,
             "icon_url": post.user.icon_url,
+            "community_id": post.community.pk,
             "community_name": post.community.name,
             "post": post.post,
             "like": post.like,
@@ -28,3 +35,42 @@ def timelineView(request):
         })
 
     return JsonResponse(result, safe=False)
+
+# 参加コミュニティ取得
+@require_GET
+def myCommunityView(request):
+    # 1. Authorizationヘッダーの取得とプレフィックス確認
+    header = request.headers.get("Authorization", "")
+    if not header.startswith("Bearer "):  
+        return JsonResponse({"error": "no_token"}, status=401)
+
+    # 2. Firebase IDトークンの検証
+    try:
+        uid = verify_id_token(header[7:])["uid"]
+    except Exception:
+        logger.exception("verify_id_token")  
+        return JsonResponse({"error": "invalid_token"}, status=401)
+
+    # 3. リクエスト送信者（自分）をDBから取得
+    me = User.objects.filter(firebase_uid=uid).first()
+    if me is None:
+        return JsonResponse({"error": "user_not_found"}, status=404)
+
+    comlist = CommunityMember.objects.select_related(
+        'community'
+    ).filter(
+        user = me
+    )
+
+    res = []
+
+    for member in comlist:
+        res.append({
+            "community_id":member.community.pk,
+            "name":member.community.name,
+            # "icon_url":member.community.icon_url,
+            # "is_favorite":member.is_favorite,
+        })
+
+    # safe=False:リストを返せるようにする
+    return JsonResponse(res, safe=False)
