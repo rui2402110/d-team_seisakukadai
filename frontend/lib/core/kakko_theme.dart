@@ -2,15 +2,24 @@ import 'package:flutter/material.dart';
 
 /// デモ(common.css の :root)と同じ配色
 class KakkoColors {
-  static const ink = Color(0xFF2B2016); // 背景
-  static const inkSoft = Color(0xFF3A2C1D); // カードの背景
-  static const inkLine = Color(0x1AF3E6D2); // 枠線(rgba(243,230,210,0.10))
-  static const fieldFill = Color(0x0FF3E6D2); // 入力欄の背景(0.06)
-  static const paperText = Color(0xFFF4EAD9); // 文字
-  static const muted = Color(0xFFB6A289); // 薄い文字
-  static const accent = Color(0xFFE07B2E); // オレンジ
+  /// 背景
+  static const ink = Color(0xFF2B2016); 
+  ///カードの背景
+  static const inkSoft = Color(0xFF3A2C1D); 
+  /// 枠線(rgba(243,230,210,0.10))
+  static const inkLine = Color(0x1AF3E6D2); 
+  /// 入力欄の背景(0.06)
+  static const fieldFill = Color(0x0FF3E6D2); 
+  /// 文字
+  static const paperText = Color(0xFFF4EAD9);
+  /// 薄い文字 
+  static const muted = Color(0xFFB6A289); 
+  /// オレンジ
+  static const accent = Color(0xFFE07B2E); 
   static const accentDisabled = Color(0x99E07B2E);
+  /// エラー文字
   static const errorText = Color(0xFFE58B7D);
+  /// エラーの枠線
   static const errorBorder = Color(0xFFD46A5A);
   static const errorFill = Color(0x2ED46A5A);
 }
