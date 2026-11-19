@@ -36,4 +36,4 @@ serviceAccount*.json
 media/
 staticfiles/
 
-pubspec.yaml
+pubspec.lock
