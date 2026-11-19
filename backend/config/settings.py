@@ -139,7 +139,10 @@ AUTH_USER_MODEL = "accounts.User"
 
 # S3移行時に "s3" に変える
 ICON_STORAGE = os.environ.get("ICON_STORAGE", "local")
-AWS_S3_BUCKET = os.environ.get("AWS_S3_BUCKET", "")
+AWS_S3_REGION = os.environ.get("AWS_S3_REGION", "us-east-1")
+AWS_S3_BUCKET_WORKS = os.environ.get("AWS_S3_BUCKET_WORKS", "")
+AWS_S3_BUCKET_POSTS = os.environ.get("AWS_S3_BUCKET_POSTS", "")
+AWS_S3_BUCKET_ICONS = os.environ.get("AWS_S3_BUCKET_ICONS", "")
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
