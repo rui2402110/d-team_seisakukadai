@@ -119,7 +119,7 @@ class _ProfileState extends State<Profile>
                       clipBehavior: Clip.none,
                       children: [
                         Container(
-                          height: 100,
+                          height: 160,
                           decoration: const BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
@@ -130,8 +130,10 @@ class _ProfileState extends State<Profile>
                           ),
                         ),
                         Positioned(
-                          top: 50,
-                          left: 10,
+                          top: 110,
+                          left: 0,
+                          // right: 0,
+                          height: 100,
                           child: CircleAvatar(
                             radius: 50,
                             backgroundImage: iconUrl.isNotEmpty 
@@ -142,7 +144,7 @@ class _ProfileState extends State<Profile>
                         if (isMe)...{
                           Positioned(
                             right: 10,
-                            top: 110,
+                            top: 120,
                             child: ElevatedButton(
                               onPressed: () {}, 
                               child: const Text("プロフィールを編集"),
@@ -151,11 +153,11 @@ class _ProfileState extends State<Profile>
                         } else...{
                           Positioned(
                             right: 10,
-                            top: 110,
+                            top: 140,
                             child: 
                               ElevatedButton(
                                 onPressed: () async {
-                                  print("aaaaaaaa");
+                                  print(user['user_id']);
                                   // 現在のフォロー状態を保存
                                   final bool oldFollow = user['is_follow'] ?? false;
                                   final int oldCount = user['follower_count'] ?? 0;
@@ -170,10 +172,11 @@ class _ProfileState extends State<Profile>
                                   });
 
                                   try {
-                                    await ProfileRepository().followUser(
-                                      userId: user['user_id'].toString(),
-                                      follow: newFollow,
-                                    );
+                                    final res= await ProfileRepository().followUser(
+                                        userId: user['user_id'].toString(),
+                                        follow: newFollow,
+                                      );
+                                    print(res);
                                   } catch (e) {
                                     // DB更新に失敗した場合は元に戻す
                                     if (!mounted) return;

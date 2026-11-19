@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 @csrf_exempt
 @require_POST
 def followView(request, user_id):
+    print("user_id = "+user_id)
     # トークン検証
     header = request.headers.get("Authorization", "")
     if not header.startswith("Bearer "):
