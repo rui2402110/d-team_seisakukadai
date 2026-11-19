@@ -1,26 +1,35 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-
 import '../../core/api_client.dart';
 
 // Djangoのプロフィールとの通信を担当するクラス
 class ProfileRepository {
+  // JSONレスポンスをMapに変換
+  Map<String, dynamic> _decodeResponse(http.Response response) {
+    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+
+    if (decoded is Map<String, dynamic>) {
+      return decoded;
+    }
+
+    throw Exception('サーバーから不正なデータが返されました');
+  }
 
   // Djangoからプロフィールを取得する
   // ログイン確認とトークン取得はここで行う(画面側では行わない)
-  Future<Map<String, dynamic>> getUserProfile({String? user_id}) async {
+  Future<Map<String, dynamic>> getUserProfile({String? userId}) async {
 
     // ログイン中ユーザーのIDトークンを取得(未ログインなら ApiException)
     final idToken = await ApiClient.idToken();
 
-    // 1. user_id の有無によってURLを切り替える
+    // 1. userId の有無によってURLを切り替える
     final Uri url;
-    if (user_id == null || user_id.isEmpty) {
+    if (userId == null || userId.isEmpty) {
       // 自分のプロフィール (/profiles/userprofiles/)
       url = Uri.parse('${ApiClient.baseUrl}/profiles/userprofiles/');
     } else {
       // 他人のプロフィール (/profiles/userprofiles/123/)
-      url = Uri.parse('${ApiClient.baseUrl}/profiles/userprofiles/$user_id/');
+      url = Uri.parse('${ApiClient.baseUrl}/profiles/userprofiles/$userId/');
     }
 
     // 2. リクエストを送信（res を ifの外で使えるように宣言）
@@ -49,10 +58,55 @@ class ProfileRepository {
   }
 
   // フォロー
-  // Future<Map<String,dynamic>> followUser(user_id)async{
-  //   // ログイン中ユーザーのIDトークンを取得(未ログインなら ApiException)
-  //   final idToken = await ApiClient.idToken();
-    
+  Future<Map<String,dynamic>> followUser({
+    //required:必須の引数
+    required String userId,
+    required bool follow
+  })async{
+    // ログイン中ユーザーのIDトークンを取得(未ログインなら ApiException)
+    final idToken = await ApiClient.idToken();
 
-  // }
+    //url
+    final url = Uri.parse('${ApiClient.baseUrl}/users/follow/$userId');
+
+    //リクエスト
+    final res = await http.post(
+      url,
+      headers: {
+        ...ApiClient.headers(idToken),
+        //データ形式と文字コード
+        'Content-Type': 'application/json; charset=UTF-8'
+      },
+      body: jsonEncode({'follow' : follow}),
+    );
+    // 認証エラー
+    if (res.statusCode == 401) {
+      throw ApiException(
+        'ログインの有効期限が切れました。もう一度ログインしてください',
+      );
+    }
+
+    // ユーザーが存在しない
+    if (res.statusCode == 404) {
+      throw ApiException('ユーザーが見つかりません');
+    }
+    // 不正なリクエスト
+    if (res.statusCode == 400) {
+      final data = _decodeResponse(res);
+      throw ApiException(
+        data['error']?.toString() ?? '不正なリクエストです',
+      );
+    }
+
+    // その他のエラー
+    if (res.statusCode != 200) {
+      throw ApiException(
+        'フォロー処理に失敗しました (${res.statusCode})',
+      );
+    }
+
+    //成功時
+    return _decodeResponse(res);
+
+  }
 }

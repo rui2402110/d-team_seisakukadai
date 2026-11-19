@@ -23,7 +23,7 @@ class _ProfileState extends State<Profile>
 
   Future<Map<String, dynamic>> _UserProfile(String? user_id) async {
     // Django APIからプロフィールを取得
-    return await ProfileRepository().getUserProfile(user_id:user_id);
+    return await ProfileRepository().getUserProfile(userId:user_id);
   }
 
   @override
