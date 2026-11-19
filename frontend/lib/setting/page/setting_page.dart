@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'component/navbar.dart';
+import '../../component/navbar.dart';
 
 class Setting extends StatefulWidget {
   const Setting({super.key});
