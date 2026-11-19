@@ -67,7 +67,7 @@ class ProfileRepository {
     final idToken = await ApiClient.idToken();
 
     //url
-    final url = Uri.parse('${ApiClient.baseUrl}/users/follow/$userId/');
+    final url = Uri.parse('${ApiClient.baseUrl}/accounts/users/follow/$userId/');
 
     //リクエスト
     final res = await http.post(

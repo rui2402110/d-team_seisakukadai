@@ -1,12 +1,9 @@
-import json
 import logging
-from django.db import IntegrityError
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET
 from accounts.models import User,Follow
 from core.firebase import verify_id_token
-from core.storage import default_icon_url
 
 # ロガーの初期化（例外ログ出力用）
 logger = logging.getLogger(__name__)
