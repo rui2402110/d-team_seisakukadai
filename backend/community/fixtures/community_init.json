@@ -1,14 +1,40 @@
 [
     {
-        "model":"community.community",
-        "pk":1,
-        "fields":{
+        "model": "community.community",
+        "pk": 1,
+        "fields": {
             "name": "漫画村",
             "target": "ワンピース",
             "detail": "ネタバレ注意",
             "icon_url": "",
-            "created_at": "2026-11-17",
+            "created_at": "2026-11-10",
             "created_user": 1,
+            "community_type": 1
+        }
+    },
+    {
+        "model": "community.community",
+        "pk": 2,
+        "fields": {
+            "name": "小説好き集会所",
+            "target": "夜想曲のリベルタ",
+            "detail": "感想・考察歓迎",
+            "icon_url": "",
+            "created_at": "2026-11-10",
+            "created_user": 2,
+            "community_type": 1
+        }
+    },
+    {
+        "model": "community.community",
+        "pk": 3,
+        "fields": {
+            "name": "アニメ研究会",
+            "target": "2026秋アニメ",
+            "detail": "アニメ好き集合",
+            "icon_url": "",
+            "created_at": "2026-11-10",
+            "created_user": 3,
             "community_type": 1
         }
     }
