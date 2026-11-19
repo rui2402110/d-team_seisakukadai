@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'component/navbar.dart';
-import 'profile_repository.dart';
+import '../../component/navbar.dart';
+import '../repository/profile_repository.dart';
 
 class Profile extends StatefulWidget {
   final String? user_id;
@@ -23,7 +23,7 @@ class _ProfileState extends State<Profile>
 
   Future<Map<String, dynamic>> _UserProfile(String? user_id) async {
     // Django APIからプロフィールを取得
-    return await ProfileRepository().getUserProfile(user_id:user_id);
+    return await ProfileRepository().getUserProfile(userId:user_id);
   }
 
   @override
@@ -81,7 +81,7 @@ class _ProfileState extends State<Profile>
               final user = data['user'];
               final bool isMe = data['is_me'];
               final DateTime d = DateTime.parse(user['created_at']);
-
+          
               // アイコンURLの取得（nullならデフォルトや空文字）
               final String iconUrl = user['icon_url'] ?? '';
 
@@ -119,7 +119,7 @@ class _ProfileState extends State<Profile>
                       clipBehavior: Clip.none,
                       children: [
                         Container(
-                          height: 100,
+                          height: 160,
                           decoration: const BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
@@ -130,8 +130,10 @@ class _ProfileState extends State<Profile>
                           ),
                         ),
                         Positioned(
-                          top: 50,
-                          left: 10,
+                          top: 110,
+                          left: 0,
+                          // right: 0,
+                          height: 100,
                           child: CircleAvatar(
                             radius: 50,
                             backgroundImage: iconUrl.isNotEmpty 
@@ -142,7 +144,7 @@ class _ProfileState extends State<Profile>
                         if (isMe)...{
                           Positioned(
                             right: 10,
-                            top: 110,
+                            top: 120,
                             child: ElevatedButton(
                               onPressed: () {}, 
                               child: const Text("プロフィールを編集"),
@@ -151,11 +153,47 @@ class _ProfileState extends State<Profile>
                         } else...{
                           Positioned(
                             right: 10,
-                            top: 110,
-                            child: ElevatedButton(
-                              onPressed: () {}, 
-                              child: const Text("フォロー"),
-                            ),
+                            top: 140,
+                            child: 
+                              ElevatedButton(
+                                onPressed: () async {
+                                  print(user['user_id']);
+                                  // 現在のフォロー状態を保存
+                                  final bool oldFollow = user['is_follow'] ?? false;
+                                  final int oldCount = user['follower_count'] ?? 0;
+
+                                  // フォロー・解除後の状態
+                                  final bool newFollow = !oldFollow;
+
+                                  // 画面を先に更新
+                                  setState(() {
+                                    user['is_follow'] = newFollow;
+                                    user['follower_count'] = oldCount + (newFollow ? 1 : -1);
+                                  });
+
+                                  try {
+                                    final res= await ProfileRepository().followUser(
+                                        userId: user['user_id'].toString(),
+                                        follow: newFollow,
+                                      );
+                                    print(res);
+                                  } catch (e) {
+                                    // DB更新に失敗した場合は元に戻す
+                                    if (!mounted) return;
+
+                                    setState(() {
+                                      user['is_follow'] = oldFollow;
+                                      user['follower_count'] = oldCount;
+                                    });
+
+                                    print('フォロー処理エラー: $e');
+                                  }
+                                },
+                                child: Text(
+                                  (user['is_follow'] ?? false) ? "フォロー中" : "フォロー",
+                                ),
+                              ),
+
                           )
                         }
                       ],

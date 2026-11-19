@@ -35,3 +35,5 @@ serviceAccount*.json
 *.log
 media/
 staticfiles/
+
+pubspec.lock

@@ -310,7 +310,30 @@ class _TimelineState extends State<Timeline>
                         ],
                       ),
                     ),
-                    loadPost(),
+                    // TL------------------------------------------------------------------------------------
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: 10000,
+                        itemBuilder: (context,index){
+                          return ListTile(
+                            leading: const CircleAvatar(
+                              radius: 20,
+                              backgroundImage: NetworkImage(
+                                'https://picsum.photos/200/300',
+                              ),
+                            ),
+                            title: Row( 
+                              children: [
+                                Text('ユーザー名'),
+                                SizedBox(width: 5,),
+                                Tooltip()
+                                ],),
+                            subtitle: 
+                              Text("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                                style: TextStyle(fontSize: 20),),
+                            onTap: () => print("test"),
+                          );
+                        }))
                   ],
                 );
             })

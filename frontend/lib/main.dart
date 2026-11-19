@@ -5,9 +5,9 @@ import 'auth/page/auth_gate.dart';
 import 'community/page/community_menu_page.dart';
 import 'firebase_options.dart'; // `flutterfire configure` で自動生成される あとでやってもらう
 import 'notification.dart';
-import 'profile.dart';
+import 'profile/page/profile.dart';
 import 'search.dart';
-import 'setting.dart';
+import 'setting/page/setting_page.dart';
 import 'timeline/page/timeline_page.dart';
 import 'work/page/work_menu.dart';
 
