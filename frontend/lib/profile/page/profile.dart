@@ -81,7 +81,7 @@ class _ProfileState extends State<Profile>
               final user = data['user'];
               final bool isMe = data['is_me'];
               final DateTime d = DateTime.parse(user['created_at']);
-
+          
               // アイコンURLの取得（nullならデフォルトや空文字）
               final String iconUrl = user['icon_url'] ?? '';
 
@@ -152,12 +152,45 @@ class _ProfileState extends State<Profile>
                           Positioned(
                             right: 10,
                             top: 110,
-                            child: ElevatedButton(
-                              onPressed: () {
-                                // followUser(user['user_id'],user['is_follow']);
-                              }, 
-                              child: const Text("フォロー"),
-                            ),
+                            child: 
+                              ElevatedButton(
+                                onPressed: () async {
+                                  print("aaaaaaaa");
+                                  // 現在のフォロー状態を保存
+                                  final bool oldFollow = user['is_follow'] ?? false;
+                                  final int oldCount = user['follower_count'] ?? 0;
+
+                                  // フォロー・解除後の状態
+                                  final bool newFollow = !oldFollow;
+
+                                  // 画面を先に更新
+                                  setState(() {
+                                    user['is_follow'] = newFollow;
+                                    user['follower_count'] = oldCount + (newFollow ? 1 : -1);
+                                  });
+
+                                  try {
+                                    await ProfileRepository().followUser(
+                                      userId: user['user_id'].toString(),
+                                      follow: newFollow,
+                                    );
+                                  } catch (e) {
+                                    // DB更新に失敗した場合は元に戻す
+                                    if (!mounted) return;
+
+                                    setState(() {
+                                      user['is_follow'] = oldFollow;
+                                      user['follower_count'] = oldCount;
+                                    });
+
+                                    print('フォロー処理エラー: $e');
+                                  }
+                                },
+                                child: Text(
+                                  (user['is_follow'] ?? false) ? "フォロー中" : "フォロー",
+                                ),
+                              ),
+
                           )
                         }
                       ],

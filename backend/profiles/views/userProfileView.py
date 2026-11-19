@@ -36,9 +36,18 @@ def userProfileView(request, user_id=None):
         target = me
     else:
         target = User.objects.filter(user_id=user_id).first()
-        is_follow = Follow.objects.filter(from_user=user_id,to_user=target).exists()
         if target is None:
-            return JsonResponse({"error": "user_not_found"}, status=404)  # ※ "return" を追加し、タイポも修正
+            return JsonResponse({"error": "user_not_found"}, status=404)
+    # フォローしているか
+    is_follow = Follow.objects.filter(from_user=me,to_user=target).exists()
+    # フォロー数（自分がフォローしている人数）
+    follow_count = Follow.objects.filter(
+        from_user=target
+    ).count()
+    # フォロワー数（自分をフォローしている人数）
+    follower_count = Follow.objects.filter(
+        to_user=target
+    ).count()
             
     # 5. プロフィール情報と自分かどうかのフラグを返却
     return JsonResponse({
@@ -50,6 +59,8 @@ def userProfileView(request, user_id=None):
             "icon_url": target.icon_url,
             "created_at": target.created_at.isoformat(),
             "is_follow":is_follow,
+            'follow_count':follow_count,
+            'follower_count':follower_count,
         },
         "is_me": (target.pk == me.pk),
     })

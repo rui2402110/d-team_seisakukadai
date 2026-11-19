@@ -51,5 +51,5 @@ def followView(request, user_id):
     # フォローできたかどうかと新しいフォロー数を取得
     return JsonResponse({
         "is_following": want,
-        "follower_count": Follow.objects.filter(to_user=target).count(),
+        # "follower_count": Follow.objects.filter(to_user=target).count(),
     })
