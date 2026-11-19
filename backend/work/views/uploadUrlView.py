@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 # ここに無い形式は、アップロードさせない（想定内のファイルを防ぐ）
 
 IMAGE_TYPES = {"image/jpeg": ".jpg","image/png": ".png"}
-VIDEO_TYPES = {"vodeo/mp4": ".mp4"}
+VIDEO_TYPES = {"video/mp4": ".mp4"}
 
 MAX_IMAGES = 20     #画像は1作品につき20枚まで
 EXPIRES_IN = 120    #書名付きurlの有効期限（秒）　120秒＝2分
@@ -39,7 +39,7 @@ def uploadUrlView(request):
     # ------------------------------------------------------------
     # Flutter は「Authorization: Bearer <IDトークン>」というヘッダーを付けて送ってくる。
     header = request.headers.get("Authorization", "")
-    if not header.startswitch("Bearer"):
+    if not header.startswith("Bearer"):
         # ヘッダーが無い → 未ログイン。401(認証エラー)で断る。
         return JsonResponse({"error": "no_token"},status=401)
     try:
@@ -110,21 +110,21 @@ def uploadUrlView(request):
         # ・名前をランダムにして、他のファイルを上書きしないようにする。
         # ・ファイル名をクライアントに決めさせない(細工を防ぐため)。
 
-        key = f"works/{user.pk}/{uuid.uuid().hex}{allowed[ct]}"
+        key = f"works/{user.pk}/{uuid.uuid4().hex}{allowed[ct]}"
 
         # 署名付きURLを作る。
         #   "put_object" : このURLで「アップロード(PUT)」だけを許可する、という意味
         #   Bucket / Key : どのバケットの、どの場所か
         #   ContentType  : この形式のファイルだけ許可(送るときも同じ値を付ける必要がある)
         #   ExpiresIn    : 有効時間(秒)。過ぎるとそのURLは使えなくなる
-        url = s3.generate_pressigned_url(
+        url = s3.generate_presigned_url(
             "put_object",
-            Param={
+            Params={
                 "Bucket": settings.AWS_S3_BUCKET,
-                "key": key,
+                "Key": key,
                 "ContentType": ct,
             },
-            EXPIRES_IN=EXPIRES_IN,
+            ExpiresIn=EXPIRES_IN,
         )
         uploads.append({"upload_url": url, "key": key, "content_type": ct})
 
