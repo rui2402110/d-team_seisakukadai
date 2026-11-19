@@ -18,7 +18,8 @@ from django.views.decorators.http import require_POST
 from django.conf import settings
 from accounts.models import User
 from core.firebase import verify_id_token     # Firebaseのトークンを検証する関数
-from core.storage import s3_client  
+from core.storage import s3_client,bucket_name  
+
 
 logger = logging.getLogger(__name__)
 
@@ -120,7 +121,7 @@ def uploadUrlView(request):
         url = s3.generate_presigned_url(
             "put_object",
             Params={
-                "Bucket": settings.AWS_S3_BUCKET,
+                "Bucket": bucket_name("works"),
                 "Key": key,
                 "ContentType": ct,
             },
