@@ -1,12 +1,9 @@
-import json
 import logging
-from django.db import IntegrityError
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET
-from accounts.models import User
+from accounts.models import User,Follow
 from core.firebase import verify_id_token
-from core.storage import default_icon_url
 
 # ロガーの初期化（例外ログ出力用）
 logger = logging.getLogger(__name__)
@@ -37,7 +34,17 @@ def userProfileView(request, user_id=None):
     else:
         target = User.objects.filter(user_id=user_id).first()
         if target is None:
-            return JsonResponse({"error": "user_not_found"}, status=404)  # ※ "return" を追加し、タイポも修正
+            return JsonResponse({"error": "user_not_found"}, status=404)
+    # フォローしているか
+    is_follow = Follow.objects.filter(from_user=me,to_user=target).exists()
+    # フォロー数（自分がフォローしている人数）
+    follow_count = Follow.objects.filter(
+        from_user=target
+    ).count()
+    # フォロワー数（自分をフォローしている人数）
+    follower_count = Follow.objects.filter(
+        to_user=target
+    ).count()
             
     # 5. プロフィール情報と自分かどうかのフラグを返却
     return JsonResponse({
@@ -48,6 +55,9 @@ def userProfileView(request, user_id=None):
             "link": target.link,
             "icon_url": target.icon_url,
             "created_at": target.created_at.isoformat(),
+            "is_follow":is_follow,
+            'follow_count':follow_count,
+            'follower_count':follower_count,
         },
         "is_me": (target.pk == me.pk),
     })

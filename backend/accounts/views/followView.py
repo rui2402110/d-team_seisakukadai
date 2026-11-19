@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 @csrf_exempt
 @require_POST
 def followView(request, user_id):
+    print("user_id = "+user_id)
     # トークン検証
     header = request.headers.get("Authorization", "")
     if not header.startswith("Bearer "):
@@ -51,5 +52,5 @@ def followView(request, user_id):
     # フォローできたかどうかと新しいフォロー数を取得
     return JsonResponse({
         "is_following": want,
-        "follower_count": Follow.objects.filter(to_user=target).count(),
+        # "follower_count": Follow.objects.filter(to_user=target).count(),
     })
