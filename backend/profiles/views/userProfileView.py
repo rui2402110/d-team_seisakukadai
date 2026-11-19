@@ -4,7 +4,7 @@ from django.db import IntegrityError
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET
-from accounts.models import User
+from accounts.models import User,Follow
 from core.firebase import verify_id_token
 from core.storage import default_icon_url
 
@@ -36,6 +36,7 @@ def userProfileView(request, user_id=None):
         target = me
     else:
         target = User.objects.filter(user_id=user_id).first()
+        is_follow = Follow.objects.filter(from_user=user_id,to_user=target).exists()
         if target is None:
             return JsonResponse({"error": "user_not_found"}, status=404)  # ※ "return" を追加し、タイポも修正
             
@@ -48,6 +49,7 @@ def userProfileView(request, user_id=None):
             "link": target.link,
             "icon_url": target.icon_url,
             "created_at": target.created_at.isoformat(),
+            "is_follow":is_follow,
         },
         "is_me": (target.pk == me.pk),
     })

@@ -153,7 +153,9 @@ class _ProfileState extends State<Profile>
                             right: 10,
                             top: 110,
                             child: ElevatedButton(
-                              onPressed: () {}, 
+                              onPressed: () {
+                                // followUser(user['user_id'],user['is_follow']);
+                              }, 
                               child: const Text("フォロー"),
                             ),
                           )
