@@ -1,5 +1,6 @@
-
 import 'package:flutter/material.dart';
+
+import '../../component/navbar.dart';
 
 class WorkPostDonePage extends StatelessWidget {
   const WorkPostDonePage({super.key});
@@ -13,7 +14,10 @@ class WorkPostDonePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    // ナビ付きの枠に、この画面の中身を渡す(作品タブを選択状態にする)
+    return Navbar(
+      selectedIndex: NavIndex.work,
+      child: Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
         child: Column(
@@ -204,6 +208,7 @@ class WorkPostDonePage extends StatelessWidget {
           ],
         ),
       ),
+    ),
     );
   }
 }
