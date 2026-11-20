@@ -67,14 +67,16 @@ def uploadUrlView(request):
     try:
         body = json.loads(request.body or "{}")          # 本文(JSON)を辞書に変換
     except json.JSONDecodeError:
+        # print("jisyo error")
         return JsonResponse({"error": "invalid_json"}, status=400)
                                                                                          
     work_type = body.get("work_type")           # 2=画像, 3=動画  
     content_types = body.get("content_types")     # ファイルごとの形式のリスト
-
-
+    # print(work_type)
+    print(content_types)
     # content_types が「中身のあるリスト」でなければ、不正な入力。
     if not isinstance(content_types, list) or not content_types:
+        # print("zissou error")
         return JsonResponse({"error": "invalid_content_types"}, status=400)
 
 
@@ -123,7 +125,7 @@ def uploadUrlView(request):
             Params={
                 "Bucket": bucket_name("works"),
                 "Key": key,
-                "ContentType": ct,
+                # "ContentType": ct,
             },
             ExpiresIn=EXPIRES_IN,
         )

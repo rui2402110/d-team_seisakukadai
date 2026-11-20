@@ -60,7 +60,7 @@ class WorkPostRepository {
     final res = await http.post(
       Uri.parse('${ApiClient.baseUrl}/work/uploadurls/'),
       headers: ApiClient.headers(idToken),
-      body: jsonEncode({'work_type': workType, 'content_type': contentType}),
+      body: jsonEncode({'work_type': workType, 'content_types': contentType}),
     );
 
     if (res.statusCode == 401) {
@@ -81,11 +81,15 @@ class WorkPostRepository {
     String contentType,
     List<int> bytes,
   ) async {
+    print(uploadUrl);
+    print(contentType);
+
     final res = await http.put(
       Uri.parse(uploadUrl),
-      headers: {'Content-Type': contentType},
+      // headers: {'Content-Type': contentType},お
       body: bytes,
     );
+    print("$res");
     if (res.statusCode != 200) {
       throw Exception('ファイルの送信に失敗しました。');
     }

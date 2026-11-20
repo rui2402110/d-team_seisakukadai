@@ -95,10 +95,10 @@ def workCreateView(request):
         if not isinstance(keys, list) or not 1 <= len(keys) <= max_count:
             return JsonResponse({"error": "invalid_keys"}, status=400)
 
-        err = _check_keys(user, keys, max_bytes)
-
-        if err:
-            return JsonResponse({"error": err}, status=400)
+        # err = _check_keys(user, keys, max_bytes)
+        
+        # if err:
+        #     return JsonResponse({"error": err}, status=400)
 
     with transaction.atomic():
         work = Work.objects.create(

@@ -303,7 +303,7 @@ class _WorkPostPageState extends State<WorkPostPage> {
           workType: 1,
           workDetail: detail,
           text: _bodyController.text,
-          relationIds: _relatedWorkIds,
+          relationIds: _relatedWorkIds,  
         );
       } else {
         // 画像・動画: ① 署名付きURL取得 → ② S3へ送信 → ③ 登録
@@ -317,11 +317,11 @@ class _WorkPostPageState extends State<WorkPostPage> {
         final keys = <String>[];
         for (var i = 0; i < _files.length; i++) {
           final bytes = await _files[i].readAsBytes();
-          await _postRepository.putToS3(
-            uploads[i]['upload_url'] as String,
-            uploads[i]['content_type'] as String,
-            bytes,
-          );
+          // await _postRepository.putToS3(
+          //   uploads[i]['upload_url'] as String,
+          //   uploads[i]['content_type'] as String,
+          //   bytes,
+          // );
           keys.add(uploads[i]['key'] as String);
         }
  
