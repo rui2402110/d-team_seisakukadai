@@ -4,5 +4,5 @@ from community.views.communityCreateView import communityCreateView
 
 urlpatterns = [
     path("communitymenu/",communityMenuView, name="communitymenu"),
-    path("communitycreteview/",communityCreateView,name="communitycreateview")
+    path("communitycreate/",communityCreateView,name="communitycreate")
 ]

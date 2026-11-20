@@ -5,7 +5,7 @@ def communityMenuView(request):
     # objects.fillter = select
     # pk = コミュニティID
     # communityData = コミュニティ型の変数
-    communityData = Community.objects.filter(pk=1)
+    communityData = Community.objects.all()
     # JsonResponse = jsonで返り値を返す
     return JsonResponse({
         "community":list(communityData.values())

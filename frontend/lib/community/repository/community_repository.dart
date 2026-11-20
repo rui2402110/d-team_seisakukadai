@@ -69,7 +69,7 @@ class CommunityRepository {
     final idToken = await ApiClient.idToken();
 
     final res = await http.post(
-      Uri.parse('${ApiClient.baseUrl}/community/communitycreate'),
+      Uri.parse('${ApiClient.baseUrl}/community/communitycreate/'),
       headers: ApiClient.headers(idToken),
       body: jsonEncode({
         'name': name,
