@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../component/navbar.dart';
 import '../../core/kakko_theme.dart';
 import '../repository/timeline_repository.dart';
+import '../../component/postTile.dart';
 
 class Timeline extends StatefulWidget {
   const Timeline({super.key});
@@ -79,62 +80,57 @@ class _TimelineState extends State<Timeline>
               final posts =
                   snapshot.data![1] as List<TimelineModel>;
 
-              return Expanded(
-                child:
-                  DefaultTabController(
-                    length: communities.length+1, 
-                    child: Column(
-                      children: [
-                        TabBar(
-                          isScrollable: true,
-                          tabs: [
-                            Tab(text: "フォロー",),
-                            ...communities.map( // コミュニティ名を取得
-                              (c) => Tab(text: c.name,),
-                            )
-                          ] 
-                        ),
-                        Expanded(child: 
-                          TabBarView(children: [
-                            // フォロータブ
-                            ListView.builder(
-                              itemCount: posts.length,
-                              itemBuilder: (context, index) {
-                                final post = posts[index];
-
-                                return ListTile(
-                                  title: Text(post.name),
-                                  subtitle: Text(post.post),
-                                );
-                              },
-                            ),
-
-                            // コミュニティタブ
-                            ...communities.map((community) {
-
-                              final filteredPosts = posts.where(
-                                (post) =>
-                                    post.communityId == community.communityId,
-                              ).toList();
-
-                              return ListView.builder(
-                                itemCount: filteredPosts.length,
-                                itemBuilder: (context, index) {
-
-                                  final post = filteredPosts[index];
-
-                                  return ListTile(
-                                    title: Text(post.name),
-                                    subtitle: Text(post.post),
-                                  );
-                                },
-                              );
-                            }),
-                          ])  
+              return DefaultTabController(
+                length: communities.length+1, 
+                child: Column(
+                  children: [
+                    TabBar(
+                      isScrollable: true,
+                      tabs: [
+                        Tab(text: "フォロー",),
+                        ...communities.map( // コミュニティ名を取得
+                          (c) => Tab(text: c.name,),
                         )
-                      ],
+                      ] 
+                    ),
+                    Expanded(child: 
+                      TabBarView(children: [
+                        // フォロータブ
+                        ListView.builder(
+                          itemCount: posts.length,
+                          itemBuilder: (context, index) {
+                            return PostTile(
+                              post: posts[index],
+                            );
+                          },
+                        ),
+                        
+
+                        // コミュニティタブ
+                        ...communities.map((community) {
+
+                          final filteredPosts = posts.where(
+                            (post){
+                              return 
+                                post.communityId == community.communityId &&
+                                post.replyId == 0;
+                            }
+                          ).toList();
+
+                          return ListView.builder(
+                            itemCount: filteredPosts.length,
+                            itemBuilder: (context, index) {
+
+                              final post = filteredPosts[index];
+
+                              return PostTile(post: filteredPosts[index]);
+                            },
+                          );
+                        }),
+                      ])  
                     )
-                  ),
+                  ],
+                )
               );
             }
           )
