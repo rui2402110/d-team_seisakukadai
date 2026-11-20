@@ -1,12 +1,15 @@
 from django.http import JsonResponse
 from community.models import Community
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 import json
 from accounts.models import User
 from core.firebase import verify_id_token
 import logging
 logger = logging.getLogger(__name__)
 
-
+@csrf_exempt
+@require_POST
 def communityCreateView(request):
     header = request.headers.get("Authorization", "")
 

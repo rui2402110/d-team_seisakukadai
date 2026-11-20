@@ -2,7 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-
+import '../repository/community_repository.dart';
 import '../../component/navbar.dart';
 
 /// コミュニティ作成画面。
@@ -74,24 +74,16 @@ class _CommunityCreatePageState extends State<CommunityCreatePage> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate() || _saving) return;
-
-    if (widget.onCreate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('画面は完成していますが、Djangoへの作成APIはまだ接続されていません。'),
-        ),
-      );
-      return;
-    }
-
+ 
     setState(() => _saving = true);
     try {
-      await widget.onCreate!(
+      // 通信は repository に任せる(画面は http を触らない)
+      // ※アイコン画像のアップロードは未対応のため、icon_url は空で送る
+      await CommunityRepository().createCommunity(
         name: _nameController.text.trim(),
         target: _targetController.text.trim(),
         detail: _detailController.text.trim(),
-        iconBytes: _iconBytes,
-        iconFileName: _iconFileName,
+        icon_url: '',
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -101,13 +93,13 @@ class _CommunityCreatePageState extends State<CommunityCreatePage> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('コミュニティを作成できませんでした: $e')),
+        SnackBar(content: Text('$e')),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
-
+ 
   InputDecoration _decoration(String hint, {bool multiline = false}) {
     return InputDecoration(
       hintText: hint,
@@ -140,6 +132,8 @@ class _CommunityCreatePageState extends State<CommunityCreatePage> {
       ),
     );
   }
+ 
+
 
   Widget _fieldLabel(String label) => Padding(
         padding: const EdgeInsets.only(bottom: 10),
