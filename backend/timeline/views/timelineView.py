@@ -10,13 +10,53 @@ logger = logging.getLogger(__name__)
 
 # 全コミュニティの投稿20件取得
 @require_GET
-def timelineView(request):
+def timelineView(request,post_id=None):
+    # ログインユーザー取得
+    header = request.headers.get("Authorization", "")
+    me = None
 
-    posts = Post.objects.select_related(
-        "user",
-        "community"
-        # -:降順
-    ).order_by("-createdAt")[:20]
+    if header.startswith("Bearer "):
+        try:
+            uid = verify_id_token(header[7:])["uid"]
+            me = User.objects.filter(firebase_uid=uid).first()
+        except Exception:
+            logger.exception("verify_id_token")
+
+    #投稿取得
+    if post_id is None:
+        # TL
+        posts = Post.objects.select_related(
+            "user",
+            "community"
+        ).filter(
+            reply__isnull=True
+        ).order_by("-createdAt")[:20]
+
+    else:
+        # 返信
+        posts = Post.objects.select_related(
+            "user",
+            "community"
+        ).filter(
+            reply_id=post_id
+        ).order_by("createdAt")
+
+
+    #いいね済投稿id取得
+
+    liked_post_ids = set()
+
+    if me:
+        liked_post_ids = set(
+            PostLikes.objects.filter(
+                user=me,
+                post_id__in=[post.pk for post in posts]
+            ).values_list(
+                "post_id",
+                flat=True
+            )
+        )
+
 
     result = []
 
@@ -30,6 +70,8 @@ def timelineView(request):
             "community_name": post.community.name,
             "post": post.post,
             "like": post.like,
+            "is_liked": post.pk in liked_post_ids,
+            "reply_id": post.reply.pk if post.reply is not None else 0,
             "reply_count": post.replyCount,
             "created_at": post.createdAt,
         })
