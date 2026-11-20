@@ -102,7 +102,7 @@ class WorkPostRepository {
     final idToken = await ApiClient.idToken();
 
     final res = await http.post(
-      Uri.parse('${ApiClient.baseUrl}/work/create/'),
+      Uri.parse('${ApiClient.baseUrl}/work/workcreate/'),
       headers: ApiClient.headers(idToken),
       body: jsonEncode({
         'title': title,

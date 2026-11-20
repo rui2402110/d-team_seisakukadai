@@ -125,4 +125,5 @@ def workCreateView(request):
                 main=keys[0]
             )
 
+    print("creatework dekita")
     return JsonResponse({"id": work.id}, status=201)

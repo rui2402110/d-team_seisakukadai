@@ -134,4 +134,5 @@ def uploadUrlView(request):
     # ------------------------------------------------------------
     # Flutter は、upload_url に、ファイルを送り(②)、
     # 送り終わったら、key を ③ の view に渡す。
+    print("uploadurl dekita")
     return JsonResponse({"uploads": uploads, "expires_in": EXPIRES_IN})
