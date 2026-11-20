@@ -41,6 +41,15 @@ Future<String?> checkVideo(XFile video) async {
   return null;
 }
 
+String? contentTypeOf(String fileName) {
+  final n = fileName.toLowerCase();
+  if (n.endsWith('jpg') || n.endsWith('.jpeg')) return 'image/jpeg';
+  if (n.endsWith('png')) return 'image/png';
+  if (n.endsWith('.,mp4')) return 'video/mp4';
+  return null;
+  }
+
+
 class WorkPostRepository {
   Future<List<Map<String, dynamic>>> getUploadUrls(
     int workType,
@@ -88,6 +97,7 @@ class WorkPostRepository {
     String workDetail = '',
     String? text,
     List<String>? keys,
+    List<int> relationIds = const[],
   }) async {
     final idToken = await ApiClient.idToken();
 
@@ -97,6 +107,8 @@ class WorkPostRepository {
       body: jsonEncode({
         'title': title,
         'work_type': workType,
+        'work_detail': workDetail,
+        'relation_ids': relationIds,
         // nullのときはキーごと送らない
         // if (text != null) 'text'
         if (text != null) 'text': text,
