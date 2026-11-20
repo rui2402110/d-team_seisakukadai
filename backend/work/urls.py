@@ -11,7 +11,7 @@ urlpatterns = [
     path("workdetail/<int:workid>/",workDetailView,name="work_detail"),
     path("worklike/<int:workid>/", workLikeView,name="work_like"),
     path("workpost/",workPostView, name="workpost"),
-    path("uploadurl/",uploadUrlView, name="uploadurl"),
+    path("uploadurls/",uploadUrlView, name="uploadurls"),
     path("workcreate/",workCreateView, name="workcreate"),
     
     
