@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../auth/page/auth_gate.dart';
+import '../../auth/repository/auth_repository.dart';
 import '../../component/navbar.dart';
 import '../../core/kakko_theme.dart';
 
@@ -25,6 +27,9 @@ class _SettingState extends State<Setting> {
   // 一覧のインライン編集状態（編集中のindex。nullなら非編集）
   int? _editingIndex;
   final _editController = TextEditingController();
+
+  // 認証まわり（ログアウトで使用）
+  final _authRepository = AuthRepository();
 
   @override
   void dispose() {
@@ -92,6 +97,70 @@ class _SettingState extends State<Setting> {
       if (v.isNotEmpty) _muteWords[index] = v;
       _editingIndex = null;
     });
+  }
+
+  // ---- ログアウト ----
+  /// ログアウト（確認ダイアログ → Firebaseサインアウト → 認証入口(AuthGate)へ）
+  Future<void> _logout() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      barrierColor: const Color(0xB3140E09),
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: KakkoColors.inkSoft,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: KakkoColors.inkLine),
+          ),
+          title: const Text(
+            'ログアウトしますか？',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: KakkoColors.paperText,
+            ),
+          ),
+          content: const Text(
+            'このアカウントからログアウトします。',
+            style: TextStyle(fontSize: 13, color: KakkoColors.muted),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text(
+                'キャンセル',
+                style: TextStyle(color: KakkoColors.muted),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text(
+                'ログアウト',
+                style: TextStyle(
+                  color: _danger,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+    if (ok != true) return;
+
+    try {
+      await _authRepository.logout();
+    } catch (_) {
+      if (!mounted) return;
+      _toast('ログアウトに失敗しました。もう一度お試しください');
+      return;
+    }
+    if (!mounted) return;
+    // 認証の入口へ戻る（画面スタックをすべて破棄する）
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const AuthGate()),
+      (_) => false,
+    );
   }
 
   // ---- パスワード変更モーダル ----
@@ -504,7 +573,7 @@ class _SettingState extends State<Setting> {
             sub: 'このアカウントからログアウトします',
             danger: true,
             isLast: true,
-            onTap: () => _toast('ログアウトしました（デモ）'),
+            onTap: _logout,
           ),
         ],
       ),

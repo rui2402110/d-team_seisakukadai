@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'community_create_page.dart';
+
 import '../repository/community_repository.dart';
 
 import '../../component/navbar.dart';
@@ -436,11 +438,14 @@ class _CommunityMenuPageState
                                 title: 'コミュニティ作成',
                                 description:
                                     '好きな作品のコミュニティをつくる',
-                                onTap: () =>
-                                    Navigator.of(context)
-                                        .pushNamed(
-                                  '/community/create',
-                                ),
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const CommunityCreatePage(),
+                                    ),
+                                  );
+                                },
                               ),
                             ];
 

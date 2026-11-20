@@ -9,7 +9,7 @@ from django.views.decorators.http import require_POST
 from botocore.exceptions import ClientError
 from accounts.models import User
 from core.firebase import verify_id_token
-from core.storage import s3_client
+from core.storage import s3_client,bucket_name
 from work.models import Work, Work_char, Work_image, Work_movie
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ def _check_keys(user, keys, max_bytes):
 
         try:
             head = s3.head_object(
-                Bucket=settings.AWS_S3_BUCKET,
+                Bucket=bucket_name("works"),
                 Key=key
             )
         except ClientError:
@@ -64,7 +64,7 @@ def workCreateView(request):
         return JsonResponse({"error": "user_not_found"}, status=404)
 
     try:
-        body = json.load(request.body or "{}")
+        body = json.loads(request.body or "{}")
 
     except json.JSONDecodeError:
         return JsonResponse({"error": "invalid_json"}, status=400)
@@ -125,4 +125,5 @@ def workCreateView(request):
                 main=keys[0]
             )
 
+    print("creatework dekita")
     return JsonResponse({"id": work.id}, status=201)

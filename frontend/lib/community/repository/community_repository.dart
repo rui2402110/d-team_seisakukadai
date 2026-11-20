@@ -60,4 +60,37 @@ class CommunityRepository {
       return Map<String, dynamic>.from(item as Map);
     }).toList();
   }
+  Future<int> createCommunity({
+    required String name,    
+    required String target,
+    String detail = "",
+    required String icon_url
+  }) async {
+    final idToken = await ApiClient.idToken();
+
+    final res = await http.post(
+      Uri.parse('${ApiClient.baseUrl}/community/communitycreate/'),
+      headers: ApiClient.headers(idToken),
+      body: jsonEncode({
+        'name': name,
+        'target': target,
+        'detail': detail,
+        'icon_url': icon_url
+      }),
+    );
+    if (res.statusCode == 401) {
+      throw ApiException('ログインの有効期限が切れました。もう一度ログインしてください');
+    }
+    // 400のとき、Djangoは {"error": "..."} を返す。その文字を、エラーに含める
+    if (res.statusCode == 400) {
+      final err = jsonDecode(utf8.decode(res.bodyBytes))['error'];
+      throw ApiException('入力内容に問題があります($err)');
+    }
+    // 201 = 作成成功
+    if (res.statusCode != 201) {
+      throw ApiException('作品の投稿に失敗しました(${res.statusCode})');
+    }
+    final data = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+    return (data['id'] as num).toInt();
+  }
 }

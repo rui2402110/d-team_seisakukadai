@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
-
+ 
+import 'package:image_picker/image_picker.dart';
+ 
+import '../repository/work_post_repository.dart';
 import '../repository/work_repository.dart';
-
+import 'work_post_done.dart';
+ 
 class WorkPostPage extends StatefulWidget {
   const WorkPostPage({super.key});
-
+ 
   @override
   State<WorkPostPage> createState() => _WorkPostPageState();
 }
-
+ 
 class _WorkPostPageState extends State<WorkPostPage> {
   // カラー設定
   static const Color bgColor = Color(0xFF2D2016);
@@ -17,10 +21,10 @@ class _WorkPostPageState extends State<WorkPostPage> {
   static const Color mainTextColor = Color(0xFFE9D9C6);
   static const Color subTextColor = Color(0xFFB5A18A);
   static const Color lineColor = Color(0xFF49382A);
-
+ 
   // Repository
   final WorkRepository _workRepository = WorkRepository();
-
+ 
   // 入力コントローラー
   final TextEditingController _titleController =
       TextEditingController();
@@ -28,28 +32,37 @@ class _WorkPostPageState extends State<WorkPostPage> {
       TextEditingController();
   final TextEditingController _detailController =
       TextEditingController();
-
+ 
   // 作品種類 1:文字 2:画像 3:動画
   int _workType = 1;
-
+ 
   // 選択したファイル名（画面表示用）
   String? _fileName;
-
+ 
+  // 選択したファイル本体(画像は最大20枚、動画は1本)
+  List<XFile> _files = [];
+ 
+  final ImagePicker _picker = ImagePicker();
+  final WorkPostRepository _postRepository = WorkPostRepository();
+ 
+  // 投稿処理中(二重送信を防ぐ)
+  bool _posting = false;
+ 
   // Djangoから取得した全作品
   List<Map<String, dynamic>> _allWorks = [];
-
+ 
   // 選択した関連作品ID
   final List<int> _relatedWorkIds = [];
-
+ 
   // 作品一覧読み込み状態
   bool _isLoadingWorks = false;
-
+ 
   @override
   void initState() {
     super.initState();
     _loadAllWorks();
   }
-
+ 
   @override
   void dispose() {
     _titleController.dispose();
@@ -57,7 +70,7 @@ class _WorkPostPageState extends State<WorkPostPage> {
     _detailController.dispose();
     super.dispose();
   }
-
+ 
   // メッセージ表示
   void _showMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -67,50 +80,84 @@ class _WorkPostPageState extends State<WorkPostPage> {
       ),
     );
   }
-
+ 
   // Djangoから全作品を取得
   Future<void> _loadAllWorks() async {
     setState(() {
       _isLoadingWorks = true;
     });
-
+ 
     try {
       final works = await _workRepository.getAllWorks();
-
+ 
       if (!mounted) return;
-
+ 
       setState(() {
         _allWorks = works;
         _isLoadingWorks = false;
       });
     } catch (e) {
       if (!mounted) return;
-
+ 
       setState(() {
         _isLoadingWorks = false;
       });
-
+ 
       _showMessage('作品一覧の取得に失敗しました：$e');
     }
   }
-
-  // ファイル選択ボタン（画面のみ）
-  void _selectFile() {
-    _showMessage('ファイル選択機能は未実装です');
+ 
+  // ファイル選択(画像は複数、動画は1本。動画は長さ・サイズ・形式をここでチェック)
+  Future<void> _selectFile() async {
+    try {
+      if (_workType == 2) {
+        final images = await _picker.pickMultiImage();
+        if (images.isEmpty) return;
+        if (images.length > 20) {
+          _showMessage('画像は20枚までです');
+          return;
+        }
+        for (final img in images) {
+          if (contentTypeOf(img.name) == null ||
+              contentTypeOf(img.name) == 'video/mp4') {
+            _showMessage('画像は jpg / png のみ投稿できます');
+            return;
+          }
+        }
+        setState(() {
+          _files = images;
+          _fileName = '${images.length}枚の画像を選択中';
+        });
+      } else if (_workType == 3) {
+        final video = await _picker.pickVideo(source: ImageSource.gallery);
+        if (video == null) return;
+        final error = await checkVideo(video); // 形式・サイズ・長さ
+        if (error != null) {
+          _showMessage(error);
+          return;
+        }
+        setState(() {
+          _files = [video];
+          _fileName = video.name;
+        });
+      }
+    } catch (e) {
+      _showMessage('ファイルを選択できませんでした：$e');
+    }
   }
-
+ 
   // 関連作品追加
   void _addRelatedWork() {
     if (_isLoadingWorks) {
       _showMessage('作品一覧を読み込み中です');
       return;
     }
-
+ 
     if (_allWorks.isEmpty) {
       _showMessage('追加できる作品がありません');
       return;
     }
-
+ 
     showDialog(
       context: context,
       builder: (dialogContext) {
@@ -129,20 +176,20 @@ class _WorkPostPageState extends State<WorkPostPage> {
                   itemCount: _allWorks.length,
                   itemBuilder: (context, index) {
                     final work = _allWorks[index];
-
+ 
                     final int? workId =
                         int.tryParse(work['id'].toString());
-
+ 
                     final String title =
                         work['title']?.toString() ?? 'タイトルなし';
-
+ 
                     if (workId == null) {
                       return const SizedBox.shrink();
                     }
-
+ 
                     final bool selected =
                         _relatedWorkIds.contains(workId);
-
+ 
                     return CheckboxListTile(
                       title: Text(
                         title,
@@ -163,7 +210,7 @@ class _WorkPostPageState extends State<WorkPostPage> {
                             _relatedWorkIds.remove(workId);
                           }
                         });
-
+ 
                         setState(() {});
                       },
                     );
@@ -187,21 +234,21 @@ class _WorkPostPageState extends State<WorkPostPage> {
       },
     );
   }
-
+ 
   // 本文編集用ツール
   void _insertFormat(String format) {
     final selection = _bodyController.selection;
     final text = _bodyController.text;
-
+ 
     if (!selection.isValid) return;
-
+ 
     final start = selection.start;
     final end = selection.end;
-
+ 
     final selectedText = text.substring(start, end);
-
+ 
     String replacement;
-
+ 
     switch (format) {
       case 'bold':
         replacement = '**$selectedText**';
@@ -218,7 +265,7 @@ class _WorkPostPageState extends State<WorkPostPage> {
       default:
         return;
     }
-
+ 
     _bodyController.value = TextEditingValue(
       text: text.replaceRange(start, end, replacement),
       selection: TextSelection.collapsed(
@@ -226,30 +273,80 @@ class _WorkPostPageState extends State<WorkPostPage> {
       ),
     );
   }
-
+ 
   // 投稿ボタン
-  void _postWork() {
-    if (_titleController.text.trim().isEmpty) {
+  Future<void> _postWork() async {
+    if (_posting) return;
+ 
+    final title = _titleController.text.trim();
+    if (title.isEmpty) {
       _showMessage('タイトルを入力してください');
       return;
     }
-
-    if (_workType == 1 &&
-        _bodyController.text.trim().isEmpty) {
+    if (_workType == 1 && _bodyController.text.trim().isEmpty) {
       _showMessage('本文を入力してください');
       return;
     }
-
-    if (_workType != 1 && _fileName == null) {
+    if (_workType != 1 && _files.isEmpty) {
       _showMessage('ファイルを選択してください');
       return;
     }
-
-    _showMessage(
-      '投稿処理はDjango側のPOST実装後に利用できます',
-    );
+ 
+    setState(() => _posting = true);
+    try {
+      final detail = _detailController.text.trim();
+ 
+      if (_workType == 1) {
+        // 文字作品: S3は使わず、本文をそのまま登録する
+        await _postRepository.createWork(
+          title: title,
+          workType: 1,
+          workDetail: detail,
+          text: _bodyController.text,
+          relationIds: _relatedWorkIds,
+        );
+      } else {
+        // 画像・動画: ① 署名付きURL取得 → ② S3へ送信 → ③ 登録
+        final contentTypes = _files.map((f) => contentTypeOf(f.name)!).toList();
+ 
+        final uploads = await _postRepository.getUploadUrls(
+          _workType,
+          contentTypes,
+        );
+ 
+        final keys = <String>[];
+        for (var i = 0; i < _files.length; i++) {
+          final bytes = await _files[i].readAsBytes();
+          await _postRepository.putToS3(
+            uploads[i]['upload_url'] as String,
+            uploads[i]['content_type'] as String,
+            bytes,
+          );
+          keys.add(uploads[i]['key'] as String);
+        }
+ 
+        await _postRepository.createWork(
+          title: title,
+          workType: _workType,
+          workDetail: detail,
+          keys: keys,
+          relationIds: _relatedWorkIds,
+        );
+      }
+ 
+      if (!mounted) return;
+      // 完了画面へ(投稿画面は履歴から外す)
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const WorkPostDonePage()),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      _showMessage('投稿できませんでした：$e');
+    } finally {
+      if (mounted) setState(() => _posting = false);
+    }
   }
-
+ 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -284,9 +381,9 @@ class _WorkPostPageState extends State<WorkPostPage> {
                   ],
                 ),
               ),
-
+ 
               const SizedBox(height: 24),
-
+ 
               const Text(
                 '作品投稿',
                 style: TextStyle(
@@ -295,9 +392,9 @@ class _WorkPostPageState extends State<WorkPostPage> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-
+ 
               const SizedBox(height: 6),
-
+ 
               const Text(
                 '文字・画像・動画の作品をアップロードできます',
                 style: TextStyle(
@@ -305,9 +402,9 @@ class _WorkPostPageState extends State<WorkPostPage> {
                   fontSize: 13,
                 ),
               ),
-
+ 
               const SizedBox(height: 24),
-
+ 
               // 上部メニュー
               Row(
                 children: [
@@ -328,60 +425,60 @@ class _WorkPostPageState extends State<WorkPostPage> {
                   ),
                 ],
               ),
-
+ 
               const SizedBox(height: 14),
-
+ 
               // タイトル入力
               _sectionTitle('タイトル'),
-
+ 
               const SizedBox(height: 8),
-
+ 
               _textField(
                 controller: _titleController,
                 hint: '例：灰と星屑',
                 maxLines: 1,
               ),
-
+ 
               const SizedBox(height: 20),
-
+ 
               // 作品の種類
               _sectionTitle('作品の種類'),
-
+ 
               const SizedBox(height: 8),
-
+ 
               _typeCard(
                 type: 1,
                 title: '小説・ブログ',
                 description: 'HTMLベースのエディタで文章を書けます',
                 icon: Icons.article_outlined,
               ),
-
+ 
               const SizedBox(height: 8),
-
+ 
               _typeCard(
                 type: 2,
                 title: '漫画・イラスト',
                 description: '画像ファイルをアップロードします',
                 icon: Icons.image_outlined,
               ),
-
+ 
               const SizedBox(height: 8),
-
+ 
               _typeCard(
                 type: 3,
                 title: '動画',
                 description: '動画ファイルをアップロードします',
                 icon: Icons.videocam_outlined,
               ),
-
+ 
               const SizedBox(height: 20),
-
+ 
               // 作品種類ごとの入力欄
               if (_workType == 1) ...[
                 _sectionTitle('本文'),
-
+ 
                 const SizedBox(height: 8),
-
+ 
                 Row(
                   children: [
                     _editorButton(
@@ -407,23 +504,23 @@ class _WorkPostPageState extends State<WorkPostPage> {
                     ),
                   ],
                 ),
-
+ 
                 const SizedBox(height: 8),
-
+ 
                 _textField(
                   controller: _bodyController,
                   hint: '本文を入力してください...（ブログのように書いても構いません）',
                   maxLines: 12,
                 ),
               ],
-
+ 
               if (_workType == 2 || _workType == 3) ...[
                 _sectionTitle(
                   _workType == 2 ? '画像ファイル' : '動画ファイル',
                 ),
-
+ 
                 const SizedBox(height: 8),
-
+ 
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
@@ -465,27 +562,27 @@ class _WorkPostPageState extends State<WorkPostPage> {
                   ),
                 ),
               ],
-
+ 
               const SizedBox(height: 20),
-
+ 
               // 概要
               _sectionTitle('概要'),
-
+ 
               const SizedBox(height: 8),
-
+ 
               _textField(
                 controller: _detailController,
                 hint: '作品の概要を書きましょう',
                 maxLines: 4,
               ),
-
+ 
               const SizedBox(height: 24),
-
+ 
               // 関連作品
               _sectionTitle('関連作品'),
-
+ 
               const SizedBox(height: 8),
-
+ 
               OutlinedButton.icon(
                 onPressed: _addRelatedWork,
                 icon: const Icon(
@@ -500,7 +597,7 @@ class _WorkPostPageState extends State<WorkPostPage> {
                   shape: const StadiumBorder(),
                 ),
               ),
-
+ 
               if (_isLoadingWorks) ...[
                 const SizedBox(height: 12),
                 const Row(
@@ -524,7 +621,7 @@ class _WorkPostPageState extends State<WorkPostPage> {
                   ],
                 ),
               ],
-
+ 
               if (_relatedWorkIds.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Wrap(
@@ -536,10 +633,10 @@ class _WorkPostPageState extends State<WorkPostPage> {
                           int.tryParse(work['id'].toString()) ==
                           workId,
                     );
-
+ 
                     final title =
                         work['title']?.toString() ?? 'タイトルなし';
-
+ 
                     return Chip(
                       label: Text(
                         title,
@@ -558,15 +655,15 @@ class _WorkPostPageState extends State<WorkPostPage> {
                   }).toList(),
                 ),
               ],
-
+ 
               const SizedBox(height: 24),
-
+ 
               // 投稿ボタン
               SizedBox(
                 width: double.infinity,
                 height: 48,
                 child: ElevatedButton(
-                  onPressed: _postWork,
+                  onPressed: _posting ? null : _postWork,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF75421F),
                     foregroundColor: bgColor,
@@ -575,16 +672,22 @@ class _WorkPostPageState extends State<WorkPostPage> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: const Text(
-                    '作品を投稿する',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
+                  child: _posting
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text(
+                          '作品を投稿する',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
                 ),
               ),
-
+ 
               const SizedBox(height: 30),
             ],
           ),
@@ -592,7 +695,7 @@ class _WorkPostPageState extends State<WorkPostPage> {
       ),
     );
   }
-
+ 
   // セクションタイトル
   Widget _sectionTitle(String title) {
     return Text(
@@ -604,7 +707,7 @@ class _WorkPostPageState extends State<WorkPostPage> {
       ),
     );
   }
-
+ 
   // テキスト入力欄
   Widget _textField({
     required TextEditingController controller,
@@ -638,7 +741,7 @@ class _WorkPostPageState extends State<WorkPostPage> {
       ),
     );
   }
-
+ 
   // メニューボタン
   Widget _menuButton(
     IconData icon,
@@ -660,7 +763,7 @@ class _WorkPostPageState extends State<WorkPostPage> {
       ),
     );
   }
-
+ 
   // 作品種類選択カード
   Widget _typeCard({
     required int type,
@@ -669,12 +772,13 @@ class _WorkPostPageState extends State<WorkPostPage> {
     required IconData icon,
   }) {
     final bool selected = _workType == type;
-
+ 
     return GestureDetector(
       onTap: () {
         setState(() {
           _workType = type;
           _fileName = null;
+          _files = [];
         });
       },
       child: Container(
@@ -702,6 +806,7 @@ class _WorkPostPageState extends State<WorkPostPage> {
                 setState(() {
                   _workType = value!;
                   _fileName = null;
+          _files = [];
                 });
               },
             ),
@@ -734,7 +839,7 @@ class _WorkPostPageState extends State<WorkPostPage> {
       ),
     );
   }
-
+ 
   // 本文編集ボタン
   Widget _editorButton(
     String title,

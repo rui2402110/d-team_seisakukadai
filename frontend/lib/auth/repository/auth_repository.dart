@@ -57,4 +57,10 @@ class AuthRepository {
       throw ApiException('登録に失敗しました(${res.statusCode})');
     }
   }
+
+  /// ログアウトする(Firebaseのセッションを終了する)
+  /// Django側はIDトークン検証のみなので、サーバーへのログアウトAPIは不要
+  Future<void> logout() async {
+    await FirebaseAuth.instance.signOut();
+  }
 }

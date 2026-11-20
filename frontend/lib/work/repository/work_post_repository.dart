@@ -41,6 +41,15 @@ Future<String?> checkVideo(XFile video) async {
   return null;
 }
 
+String? contentTypeOf(String fileName) {
+  final n = fileName.toLowerCase();
+  if (n.endsWith('jpg') || n.endsWith('.jpeg')) return 'image/jpeg';
+  if (n.endsWith('png')) return 'image/png';
+  if (n.endsWith('.,mp4')) return 'video/mp4';
+  return null;
+  }
+
+
 class WorkPostRepository {
   Future<List<Map<String, dynamic>>> getUploadUrls(
     int workType,
@@ -49,7 +58,7 @@ class WorkPostRepository {
     final idToken = await ApiClient.idToken();
 
     final res = await http.post(
-      Uri.parse('${ApiClient.baseUrl}/work/uploadurls'),
+      Uri.parse('${ApiClient.baseUrl}/work/uploadurls/'),
       headers: ApiClient.headers(idToken),
       body: jsonEncode({'work_type': workType, 'content_type': contentType}),
     );
@@ -88,15 +97,18 @@ class WorkPostRepository {
     String workDetail = '',
     String? text,
     List<String>? keys,
+    List<int> relationIds = const[],
   }) async {
     final idToken = await ApiClient.idToken();
 
     final res = await http.post(
-      Uri.parse('${ApiClient.baseUrl}/work/create/'),
+      Uri.parse('${ApiClient.baseUrl}/work/workcreate/'),
       headers: ApiClient.headers(idToken),
       body: jsonEncode({
         'title': title,
         'work_type': workType,
+        'work_detail': workDetail,
+        'relation_ids': relationIds,
         // nullのときはキーごと送らない
         // if (text != null) 'text'
         if (text != null) 'text': text,
