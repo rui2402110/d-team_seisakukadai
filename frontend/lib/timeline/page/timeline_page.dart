@@ -46,96 +46,228 @@ class _TimelineState extends State<Timeline>
     });
   }
 
+  
   @override
   Widget build(BuildContext context) {
-    // ナビ付きの枠に、この画面の中身を渡す
     return Navbar(
       selectedIndex: NavIndex.timeline,
       child: Column(
-      children: [
-        Expanded(
-          child: FutureBuilder(
-            future: Future.wait([
-              _getMyCommunity(),
-              _getTimeline(),
-            ]),
-            builder: (context, snapshot){
-              // Loading
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              // Error
-              if (snapshot.hasError) {
-                return Center(
-                  child: Text('エラーが発生しました:\n${snapshot.error}'),
-                );
-              }
-              // データが取得できなかった
-              if (!snapshot.hasData || snapshot.data == null) {
-                return const Center(child: Text('データが見つかりません'));
-              }
-              // ------------------------------------------------------------------
-              final communities =
-                  snapshot.data![0] as List<CommunityModel>;
-              final posts =
-                  snapshot.data![1] as List<TimelineModel>;
-
-              return DefaultTabController(
-                length: communities.length+1, 
-                child: Column(
-                  children: [
-                    TabBar(
-                      isScrollable: true,
-                      tabs: [
-                        Tab(text: "フォロー",),
-                        ...communities.map( // コミュニティ名を取得
-                          (c) => Tab(text: c.name,),
-                        )
-                      ] 
+        children: [
+          Expanded(
+            child: FutureBuilder(
+              future: Future.wait([
+                _getMyCommunity(),
+                _getTimeline(),
+              ]),
+              builder: (context, snapshot) {
+                /// Loading
+                if (snapshot.connectionState ==
+                    ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(
+                      color: KakkoColors.accent,
                     ),
-                    Expanded(child: 
-                      TabBarView(children: [
-                        // フォロータブ
-                        ListView.builder(
-                          itemCount: posts.length,
-                          itemBuilder: (context, index) {
-                            return PostTile(
-                              post: posts[index],
-                            );
-                          },
+                  );
+                }
+
+                /// Error
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      "エラーが発生しました\n${snapshot.error}",
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: KakkoColors.errorText,
+                      ),
+                    ),
+                  );
+                }
+
+                /// データなし
+                if (!snapshot.hasData ||
+                    snapshot.data == null) {
+                  return const Center(
+                    child: Text(
+                      "データが見つかりません",
+                      style: TextStyle(
+                        color: KakkoColors.muted,
+                      ),
+                    ),
+                  );
+                }
+
+                final communities =
+                    snapshot.data![0]
+                        as List<CommunityModel>;
+
+                final posts =
+                    snapshot.data![1]
+                        as List<TimelineModel>;
+
+                print(posts.length);
+
+                for (final post in posts) {
+                  print(post.postId);
+                  print(post.name);
+                  print(post.iconUrl);
+                }
+
+                return Container(
+                  decoration: BoxDecoration(
+                    color: KakkoColors.inkSoft,
+                    border: Border.all(
+                      color: KakkoColors.inkLine,
+                    ),
+                  ),
+                  child: DefaultTabController(
+                    length: communities.length + 1,
+                    child: Column(
+                      children: [
+                        TabBar(
+                          isScrollable: true,
+
+                          labelColor:
+                              KakkoColors.accent,
+
+                          unselectedLabelColor:
+                              KakkoColors.muted,
+
+                          dividerColor:
+                              Colors.transparent,
+
+                          indicator: const UnderlineTabIndicator(
+                            borderSide: BorderSide(
+                              color:
+                                  KakkoColors.accent,
+                              width: 3,
+                            ),
+                          ),
+
+                          tabs: [
+                            const Tab(
+                              text: "フォロー",
+                            ),
+                            ...communities.map(
+                              (c) => Tab(
+                                text: c.name,
+                              ),
+                            ),
+                          ],
                         ),
-                        
 
-                        // コミュニティタブ
-                        ...communities.map((community) {
+                        Expanded(
+                          child: TabBarView(
+                            children: [
+                              /// フォロータブ
+                              RefreshIndicator(
+                                color:
+                                    KakkoColors.accent,
 
-                          final filteredPosts = posts.where(
-                            (post){
-                              return 
-                                post.communityId == community.communityId &&
-                                post.replyId == 0;
-                            }
-                          ).toList();
+                                onRefresh:
+                                    refreshTimeline,
 
-                          return ListView.builder(
-                            itemCount: filteredPosts.length,
-                            itemBuilder: (context, index) {
+                                child: posts.isEmpty
+                                    ? const Center(
+                                        child: Text(
+                                          "投稿がありません",
+                                          style:
+                                              TextStyle(
+                                            color:
+                                                KakkoColors
+                                                    .muted,
+                                          ),
+                                        ),
+                                      )
+                                    : ListView.builder(
+                                        physics:
+                                            const AlwaysScrollableScrollPhysics(),
 
-                              final post = filteredPosts[index];
+                                        itemCount:
+                                            posts.length,
 
-                              return PostTile(post: filteredPosts[index]);
-                            },
-                          );
-                        }),
-                      ])  
-                    )
-                  ],
-                )
-              );
-            }
-          )
-        )
-      ]
-    ));
+                                        itemBuilder:
+                                            (context,
+                                                index) {
+                                          return PostTile(
+                                            post:
+                                                posts[
+                                                    index],
+                                          );
+                                        },
+                                      ),
+                              ),
+
+                              /// コミュニティ別タブ
+                              ...communities.map(
+                                (community) {
+                                  final filteredPosts =
+                                      posts.where(
+                                    (post) {
+                                      return post.communityId ==
+                                              community
+                                                  .communityId &&
+                                          post.replyId ==
+                                              0;
+                                    },
+                                  ).toList();
+
+                                  if (filteredPosts
+                                      .isEmpty) {
+                                    return const Center(
+                                      child: Text(
+                                        "投稿がありません",
+                                        style:
+                                            TextStyle(
+                                          color:
+                                              KakkoColors
+                                                  .muted,
+                                        ),
+                                      ),
+                                    );
+                                  }
+
+                                  return RefreshIndicator(
+                                    color:
+                                        KakkoColors
+                                            .accent,
+
+                                    onRefresh:
+                                        refreshTimeline,
+
+                                    child:
+                                        ListView.builder(
+                                      physics:
+                                          const AlwaysScrollableScrollPhysics(),
+
+                                      itemCount:
+                                          filteredPosts
+                                              .length,
+
+                                      itemBuilder:
+                                          (context,
+                                              index) {
+                                        return PostTile(
+                                          post:
+                                              filteredPosts[
+                                                  index],
+                                        );
+                                      },
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -4,6 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 
 import '../../core/api_client.dart';
+// ユーザーのセッション情報を保持するクラス
+import 'package:frontend/core/user_session.dart';
 
 class AuthRepository {
   /// Firebaseにログイン中かどうか
@@ -42,8 +44,33 @@ class AuthRepository {
       headers: ApiClient.headers(idToken),
     );
     if (res.statusCode != 200) throw ApiException('ログインに失敗しました(${res.statusCode})');
-    return jsonDecode(res.body)['registered'] == true;
+    final data = jsonDecode(res.body);
+
+  if (data['registered'] == true) {
+    final user = data['user'];
+    print(UserSession.userId);
+    print(UserSession.name);
+    print(UserSession.iconUrl);
+    print("Login data: $data");
+
+    UserSession.userId =
+        user['user_id'];
+
+    UserSession.name =
+        user['name'];
+
+    UserSession.iconUrl =
+        '${ApiClient.baseUrl}${user['icon_url']}';
+
+    UserSession.bio =
+        user['bio'];
+
+    UserSession.link =
+        user['link'];
   }
+
+  return data['registered'] == true;
+}
 
   /// 新規登録(登録済みでも200が返るので、やり直しに使える)
   Future<void> register(String name) async {
@@ -61,6 +88,7 @@ class AuthRepository {
   /// ログアウトする(Firebaseのセッションを終了する)
   /// Django側はIDトークン検証のみなので、サーバーへのログアウトAPIは不要
   Future<void> logout() async {
+    UserSession.clear();
     await FirebaseAuth.instance.signOut();
   }
 }

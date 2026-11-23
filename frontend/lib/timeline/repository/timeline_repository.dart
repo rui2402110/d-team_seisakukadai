@@ -4,11 +4,11 @@ import '../../core/api_client.dart';
 
 class TimelineRepository{
 
-  Future<List<TimelineModel>> getTimeline({String? postId}) async {
+  Future<List<TimelineModel>> getTimeline({int? postId}) async {
     final idtoken = await ApiClient.idToken();
     final Uri url;
 
-    if (postId == null || postId.isEmpty ){
+    if (postId == null || postId == 0) {
       url = Uri.parse('${ApiClient.baseUrl}/timeline/timeline/');
     }else{
       url = Uri.parse('${ApiClient.baseUrl}/timeline/timeline/$postId/');
@@ -130,6 +130,7 @@ class TimelineRepository{
 
 class TimelineModel {
   final int postId;
+  final int userId;
   final String name;
   final String iconUrl;
   final int communityId;
@@ -143,6 +144,7 @@ class TimelineModel {
 
   TimelineModel({
     required this.postId,
+    required this.userId,
     required this.name,
     required this.iconUrl,
     required this.communityId,
@@ -158,10 +160,14 @@ class TimelineModel {
   factory TimelineModel.fromJson(
     Map<String, dynamic> json,
   ) {
+    final iconUrl = json['icon_url'] ?? '';
     return TimelineModel(
       postId: json['post_id'],
+      userId: json['user_id'],
       name: json['name'],
-      iconUrl: json['icon_url'],
+      iconUrl: iconUrl.startsWith('http')
+        ? iconUrl
+        : '${ApiClient.baseUrl}$iconUrl',
       communityId: json['community_id'],
       communityName: json['community_name'],
       post: json['post'],

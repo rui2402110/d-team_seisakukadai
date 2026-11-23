@@ -64,6 +64,7 @@ def timelineView(request,post_id=None):
 
         result.append({
             "post_id": post.pk,
+            "user_id": post.user.pk,
             "name": post.user.name,
             "icon_url": post.user.icon_url,
             "community_id": post.community.pk,

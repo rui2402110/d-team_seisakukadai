@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../core/breakpoints.dart';
 import '../core/kakko_theme.dart';
+import 'package:frontend/profile/repository/profile_repository.dart';
+import 'package:frontend/core/user_session.dart';
 
 /// ナビの項目の番号。各画面が「自分は何番目か」を Navbar に伝えるために使う
 /// (例: Navbar(selectedIndex: NavIndex.work, child: ...))
@@ -58,6 +60,11 @@ class Navbar extends StatelessWidget {
   void _openProfile(BuildContext context) {
     if (ModalRoute.of(context)?.settings.name == '/profile') return;
     Navigator.of(context).pushNamed('/profile');
+  }
+
+  Future<Map<String, dynamic>> _UserProfile(String? user_id) async {
+    // Django APIからプロフィールを取得
+    return await ProfileRepository().getUserProfile(userId:user_id);
   }
 
   @override
@@ -165,14 +172,23 @@ class Navbar extends StatelessWidget {
         SizedBox(
           width: double.infinity,
           child: ListTile(
-            leading: const CircleAvatar(
+            leading: CircleAvatar(
               radius: 20,
-              backgroundImage: NetworkImage(
-                'https://picsum.photos/200/300',
+              backgroundImage:
+              UserSession.iconUrl != null
+                  ? NetworkImage(
+                      UserSession.iconUrl!,
+                    )
+                  : null,
+            ),
+            title: Text(UserSession.name ?? 'ゲスト',),
+            subtitle: Text(
+              "@${UserSession.userId ?? 'user'}",
+              style: const TextStyle(
+                fontSize: 12,
+                color: KakkoColors.muted,
               ),
             ),
-            title: const Text('ユーザー名'),
-            subtitle: const Text('@user'),
             onTap: () => _openProfile(context),
           ),
         ),
