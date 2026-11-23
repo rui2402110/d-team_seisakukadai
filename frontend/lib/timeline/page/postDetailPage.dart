@@ -5,6 +5,7 @@ import 'package:frontend/component/navbar.dart';
 import 'package:frontend/core/kakko_theme.dart';
 import 'package:frontend/component/timeAgo.dart';
 import 'package:frontend/component/postReply.dart';
+import 'package:frontend/core/user_session.dart';
 
 class PostDetailPage extends StatefulWidget{
   final TimelineModel post;
@@ -21,7 +22,7 @@ class PostDetailPage extends StatefulWidget{
 }
 
 class _PostDetailPageState extends State<PostDetailPage>{
-  
+  final controller = TextEditingController();
   @override
   Widget build(BuildContext context){
     final post = widget.post;
@@ -247,6 +248,81 @@ class _PostDetailPageState extends State<PostDetailPage>{
                 ])
               ],
             ),
+            Divider(
+              color: KakkoColors.inkLine,
+              indent: 8,
+              endIndent: 8,
+            ),
+            // ーーーーーーーーーーーーーーーーーーーーーーーーーーーーーー
+            RichText(
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: "返信先: ",
+                    style: TextStyle(
+                      color: KakkoColors.paperText.withValues(alpha: 0.3),
+                      height: 1.5,
+                    ),
+                  ),
+                  TextSpan(
+                    text: "${post.name}(@${post.userId})",
+                    style: const TextStyle(
+                      color: KakkoColors.accent,
+                      height: 1.5,
+                    ),
+                  ),
+                  TextSpan(
+                    text: "さん ",
+                    style: TextStyle(
+                      color: KakkoColors.paperText.withValues(alpha: 0.3),
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding( 
+              padding:EdgeInsets.all(8.0),
+              child:Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundImage: NetworkImage(
+                          UserSession.iconUrl!,
+                        ),
+                      ),
+
+                      const SizedBox(width: 8),
+
+                      Expanded(
+                        child: TextField(
+                          controller: controller,
+                          maxLines: null,
+                          decoration: const InputDecoration(
+                            border: InputBorder.none,
+                            hintText: '返信を入力',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        // reply API
+                      },
+                      child: const Text("返信"),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // ーーーーーーーーーーーーーーーーーーーーーーーーーー
             Divider(
               color: KakkoColors.inkLine,
               indent: 8,
