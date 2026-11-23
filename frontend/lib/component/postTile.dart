@@ -3,6 +3,7 @@ import 'package:frontend/core/kakko_theme.dart';
 import 'package:frontend/timeline/repository/timeline_repository.dart';
 import '../timeline/page/postDetailPage.dart';
 import 'package:frontend/component/timeAgo.dart';
+import 'package:frontend/component/postReply.dart';
 
 class PostTile extends StatefulWidget {
   final TimelineModel post;
@@ -153,11 +154,17 @@ class _PostTileState extends State<PostTile> {
                   /// アクション
                   Row(
                     children: [
-                      Icon(
-                        Icons.chat_bubble_outline,
-                        color:
-                            KakkoColors.muted,
-                        size: 18,
+                      IconButton(
+                        icon: const Icon(Icons.chat_bubble_outline),
+                        color: KakkoColors.muted,
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) {
+                              return ReplyDialog(parentPost:post);
+                            },
+                          );
+                        },
                       ),
 
                       const SizedBox(width: 4),

@@ -104,14 +104,6 @@ class _TimelineState extends State<Timeline>
                     snapshot.data![1]
                         as List<TimelineModel>;
 
-                print(posts.length);
-
-                for (final post in posts) {
-                  print(post.postId);
-                  print(post.name);
-                  print(post.iconUrl);
-                }
-
                 return Container(
                   decoration: BoxDecoration(
                     color: KakkoColors.inkSoft,

@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/timeline/repository/timeline_repository.dart';
-import 'package:http/http.dart';
-import '../../profile/repository/profile_repository.dart';
 import '../../component/postTile.dart';
 import 'package:frontend/component/navbar.dart';
 import 'package:frontend/core/kakko_theme.dart';
-import 'package:frontend/timeline/repository/timeline_repository.dart';
 import 'package:frontend/component/timeAgo.dart';
+import 'package:frontend/component/postReply.dart';
 
 class PostDetailPage extends StatefulWidget{
   final TimelineModel post;
@@ -176,56 +174,8 @@ class _PostDetailPageState extends State<PostDetailPage>{
                     onPressed: () {
                       showDialog(
                         context: context,
-                        barrierDismissible: false,
-                        builder: (BuildContext context) {
-                          // 返信
-                          return AlertDialog(
-                            backgroundColor:
-                                KakkoColors.inkSoft,
-
-                            title: Column(
-                              children: [
-                                
-                              ],
-                            ),
-
-                            content: SizedBox(
-                              width: 500,
-                              height: 600,
-                              child: PostDetailPage(
-                                post: post,
-                              ),
-                            ),
-
-                            actions: [
-                              TextButton(
-                                child: const Text(
-                                  'キャンセル',
-                                  style: TextStyle(
-                                    color:
-                                        KakkoColors.accent,
-                                  ),
-                                ),
-                                onPressed: () {
-                                  Navigator.of(context)
-                                      .pop();
-                                },
-                              ),
-                              TextButton(
-                                child: const Text(
-                                  'OK',
-                                  style: TextStyle(
-                                    color:
-                                        KakkoColors.accent,
-                                  ),
-                                ),
-                                onPressed: () {
-                                  Navigator.of(context)
-                                      .pop();
-                                },
-                              ),
-                            ],
-                          );
+                        builder: (context) {
+                          return ReplyDialog(parentPost:post);
                         },
                       );
                     },
