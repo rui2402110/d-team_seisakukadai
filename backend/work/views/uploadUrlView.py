@@ -125,7 +125,7 @@ def uploadUrlView(request):
             Params={
                 "Bucket": bucket_name("works"),
                 "Key": key,
-                # "ContentType": ct,
+                "ContentType": ct,
             },
             ExpiresIn=EXPIRES_IN,
         )

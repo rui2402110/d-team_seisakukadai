@@ -36,7 +36,7 @@ def _check_keys(user, keys, max_bytes):
         except ClientError:
             return "file_not_uploaded"
 
-        if head["ContentLngth"] > max_bytes:
+        if head["ContentLength"] > max_bytes:
             return "file_too_large"
 
     return None
@@ -95,10 +95,10 @@ def workCreateView(request):
         if not isinstance(keys, list) or not 1 <= len(keys) <= max_count:
             return JsonResponse({"error": "invalid_keys"}, status=400)
 
-        # err = _check_keys(user, keys, max_bytes)
+        err = _check_keys(user, keys, max_bytes)
         
-        # if err:
-        #     return JsonResponse({"error": err}, status=400)
+        if err:
+            return JsonResponse({"error": err}, status=400)
 
     with transaction.atomic():
         work = Work.objects.create(
