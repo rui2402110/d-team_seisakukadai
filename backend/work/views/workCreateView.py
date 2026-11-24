@@ -1,4 +1,3 @@
-
 import json
 import logging
 from django.conf import settings
@@ -12,22 +11,32 @@ from core.firebase import verify_id_token
 from core.storage import s3_client,bucket_name
 from work.models import Work, Work_char, Work_image, Work_movie
 
+# S3に登録できた作品、また文字作品をDBに登録する関数
+# 投稿者・ファイルの場所・サイズなど、サーバー側で確認できるものは確認する。
+
+# 認証エラー処理用変数
 logger = logging.getLogger(__name__)
 
+# グローバル変数を定義
 MAX_IMAGES = 20
 MAX_IMAGES_BYTES = 10 * 1024 * 1024
 MAX_VIDEO_BYTES = 200 * 1024 * 1024
 
 
-# アップロード済みのファイルの確認をするため
+# アップロード済みのファイルの確認をするための関数
 def _check_keys(user, keys, max_bytes):
+    # s3を扱うメソッドを変数に定義
     s3 = s3_client()
+    # 自分のworkを入れるurl
     prefix = f"works/{user.pk}/"
 
+    # keyの回数分回す
     for key in keys:
+        # 文字列で尚且つ自分のフォルダかを確認し、違かったらreturn
         if not isinstance(key, str) or not key.startswith(prefix):
             return "invalid_key"
 
+    # 引数の下処理を返り値に追加
         try:
             head = s3.head_object(
                 Bucket=bucket_name("works"),
@@ -42,8 +51,8 @@ def _check_keys(user, keys, max_bytes):
     return None
 
 
-@csrf_exempt
-@require_POST
+@csrf_exempt      #アプリ（flutter）からのPOSTを受けるため、CSRFチェックを外す
+@require_POST     #POST以外（GETなど）で来たら、405エラーで断る
 def workCreateView(request):
     header = request.headers.get("Authorization", "")
 

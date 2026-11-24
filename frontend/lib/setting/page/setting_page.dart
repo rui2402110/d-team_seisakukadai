@@ -136,10 +136,7 @@ class _SettingState extends State<Setting> {
               onPressed: () => Navigator.of(dialogContext).pop(true),
               child: const Text(
                 'ログアウト',
-                style: TextStyle(
-                  color: _danger,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: TextStyle(color: _danger, fontWeight: FontWeight.w700),
               ),
             ),
           ],
@@ -302,10 +299,7 @@ class _SettingState extends State<Setting> {
           TextField(
             controller: controller,
             obscureText: true,
-            style: const TextStyle(
-              fontSize: 14,
-              color: KakkoColors.paperText,
-            ),
+            style: const TextStyle(fontSize: 14, color: KakkoColors.paperText),
             cursorColor: KakkoColors.accent,
             decoration: _filledInputDecoration(hint: '••••••••', radius: 10),
             onSubmitted: onSubmitted,
@@ -319,10 +313,7 @@ class _SettingState extends State<Setting> {
   OutlineInputBorder _outline(double radius, {Color? color, double width = 1}) {
     return OutlineInputBorder(
       borderRadius: BorderRadius.circular(radius),
-      borderSide: BorderSide(
-        color: color ?? KakkoColors.inkLine,
-        width: width,
-      ),
+      borderSide: BorderSide(color: color ?? KakkoColors.inkLine, width: width),
     );
   }
 
@@ -364,9 +355,7 @@ class _SettingState extends State<Setting> {
           Container(
             padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
             decoration: const BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: KakkoColors.inkLine),
-              ),
+              border: Border(bottom: BorderSide(color: KakkoColors.inkLine)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -404,8 +393,7 @@ class _SettingState extends State<Setting> {
   Widget _muteSection() {
     return _sectionCard(
       title: 'ミュートワード',
-      desc:
-          '登録した単語を含む投稿をタイムラインやコミュニティで目立たなくします。ここでの変更はタイムライン・コミュニティ詳細画面にもすぐに反映されます。',
+      desc: '登録した単語を含む投稿をタイムラインやコミュニティで目立たなくします。ここでの変更はタイムライン・コミュニティ詳細画面にもすぐに反映されます。',
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -421,16 +409,16 @@ class _SettingState extends State<Setting> {
                     color: KakkoColors.paperText,
                   ),
                   cursorColor: KakkoColors.accent,
-                  decoration:
-                      _filledInputDecoration(hint: 'ミュートしたい単語を入力'),
+                  decoration: _filledInputDecoration(hint: 'ミュートしたい単語を入力'),
                   onChanged: (_) => setState(() {}),
                   onSubmitted: (_) => _addMuteWord(),
                 ),
               ),
               const SizedBox(width: 8),
               ElevatedButton(
-                onPressed:
-                    _muteController.text.trim().isEmpty ? null : _addMuteWord,
+                onPressed: _muteController.text.trim().isEmpty
+                    ? null
+                    : _addMuteWord,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: KakkoColors.accent,
                   foregroundColor: KakkoColors.ink,
@@ -531,7 +519,10 @@ class _SettingState extends State<Setting> {
               IconButton(
                 icon: Icon(editing ? Icons.check : Icons.edit_outlined),
                 iconSize: 15,
-                constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+                constraints: const BoxConstraints.tightFor(
+                  width: 28,
+                  height: 28,
+                ),
                 padding: EdgeInsets.zero,
                 color: editing ? KakkoColors.accent : KakkoColors.muted,
                 hoverColor: const Color(0x14F3E6D2),
@@ -541,7 +532,10 @@ class _SettingState extends State<Setting> {
               IconButton(
                 icon: const Icon(Icons.delete_outline),
                 iconSize: 15,
-                constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+                constraints: const BoxConstraints.tightFor(
+                  width: 28,
+                  height: 28,
+                ),
                 padding: EdgeInsets.zero,
                 color: KakkoColors.muted,
                 hoverColor: const Color(0x23E07B7B),
@@ -601,19 +595,14 @@ class _SettingState extends State<Setting> {
         decoration: isLast
             ? null
             : const BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(color: KakkoColors.inkLine),
-                ),
+                border: Border(bottom: BorderSide(color: KakkoColors.inkLine)),
               ),
         child: Row(
           children: [
             Container(
               width: 36,
               height: 36,
-              decoration: BoxDecoration(
-                color: iconBg,
-                shape: BoxShape.circle,
-              ),
+              decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle),
               child: Icon(icon, size: 17, color: iconColor),
             ),
             const SizedBox(width: 14),
@@ -637,11 +626,7 @@ class _SettingState extends State<Setting> {
                 ],
               ),
             ),
-            const Icon(
-              Icons.chevron_right,
-              size: 14,
-              color: KakkoColors.muted,
-            ),
+            const Icon(Icons.chevron_right, size: 14, color: KakkoColors.muted),
           ],
         ),
       ),
@@ -653,27 +638,31 @@ class _SettingState extends State<Setting> {
     // ナビ付きの枠に、この画面の中身を渡す
     return Navbar(
       selectedIndex: NavIndex.setting,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          // デモ版: 980px以上の広い画面では中身を中央寄せ(max-width 640px)
-          final wide = constraints.maxWidth >= 980;
-          return Align(
-            alignment: Alignment.topCenter,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: wide ? 640 : double.infinity,
+      // ダーク背景（他ページと統一）
+      child: Scaffold(
+        backgroundColor: KakkoColors.ink,
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            // デモ版: 980px以上の広い画面では中身を中央寄せ(max-width 640px)
+            final wide = constraints.maxWidth >= 980;
+            return Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: wide ? 640 : double.infinity,
+                ),
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(22, 22, 22, 60),
+                  children: [
+                    _muteSection(),
+                    const SizedBox(height: 28),
+                    _userSection(),
+                  ],
+                ),
               ),
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(22, 22, 22, 60),
-                children: [
-                  _muteSection(),
-                  const SizedBox(height: 28),
-                  _userSection(),
-                ],
-              ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

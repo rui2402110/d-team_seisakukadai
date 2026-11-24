@@ -1,11 +1,14 @@
 from django.http import JsonResponse
-from community.models import Community
+from community.models import Community,CommunityMember
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 import json
 from accounts.models import User
 from core.firebase import verify_id_token
 import logging
+from django.db import transaction
+
+
 logger = logging.getLogger(__name__)
 
 @csrf_exempt
@@ -39,13 +42,19 @@ def communityCreateView(request):
     detail=body.get("deteil","")
     icon_url=body.get("icon_url")
     
-            
-    community = Community.objects.create(
-    created_user=user,
-    name=name,
-    target=target,
-    detail=detail,
-    icon_url=icon_url,
-    community_type=1,
-    )
+    with transaction.atomic():
+        community = Community.objects.create(
+        created_user=user,
+        name=name,
+        target=target,
+        detail=detail,
+        icon_url=icon_url,
+        community_type=1,
+        )
+        CommunityMember.objects.create(
+            community=community,
+            user=user,
+            authority=1,        # 1=ホスト
+            is_favorite=False,
+        )
     return JsonResponse({"id": community.id}, status=201)
