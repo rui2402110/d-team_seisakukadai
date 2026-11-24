@@ -9,7 +9,7 @@ from core.storage import default_icon_url
 
 def workMenuView(request):
     # フォロー作品とおすすめ作品の代わりに初期データ参照
-    recommendWork = Work.objects.filter(pk__in = [1,2,3])
+    recommendWork = Work.objects.order_by('-id')[:3]
     followWork = Work.objects.filter(pk__in = [1,2,3])
     return JsonResponse({
     "worked": True,
