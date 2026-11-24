@@ -8,7 +8,7 @@ from core.firebase import verify_id_token
 from core.storage import default_icon_url
 
 def workMenuView(request):
-    # フォロー作品とおすすめ作品の代わりに初期データ参照
+    # フォロー作品の代わりに初期データ参照 おすすめ作品に新着の作品を参照 
     recommendWork = Work.objects.order_by('-id')[:3]
     followWork = Work.objects.filter(pk__in = [1,2,3])
     return JsonResponse({

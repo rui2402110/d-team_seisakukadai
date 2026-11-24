@@ -4,13 +4,17 @@ import 'package:frontend/timeline/repository/timeline_repository.dart';
 import '../timeline/page/postDetailPage.dart';
 import 'package:frontend/component/timeAgo.dart';
 import 'package:frontend/component/postReply.dart';
+import 'package:frontend/timeline/page/timeline_page.dart';
+import 'package:frontend/component/video.dart';
 
 class PostTile extends StatefulWidget {
   final TimelineModel post;
+  final VoidCallback? onReplySuccess;
 
   const PostTile({
     super.key,
     required this.post,
+    this.onReplySuccess,
   });
 
   @override
@@ -23,7 +27,6 @@ class _PostTileState extends State<PostTile> {
 
     Navigator.of(context).pushNamed('/profile');
   }
-  
 
   @override
   Widget build(BuildContext context) {
@@ -148,6 +151,41 @@ class _PostTileState extends State<PostTile> {
                       height: 1.5,
                     ),
                   ),
+                  const SizedBox(height: 8),
+
+                  if (post.medias.isNotEmpty)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+
+                        ...post.medias
+                            .where((m) => m.mediaType == 'image')
+                            .map(
+                              (m) => Padding(
+                                padding: const EdgeInsets.only(
+                                  bottom: 8,
+                                ),
+                                child: ClipRRect(
+                                  borderRadius:
+                                      BorderRadius.circular(12),
+                                  child: Image.network(
+                                    m.media,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                        ...post.medias
+                            .where((m) => m.mediaType == 'video')
+                            .map(
+                              (m) => VideoWidget(
+                                url: m.media,
+                              ),
+                            ),
+                      ],
+                    ),
+
 
                   const SizedBox(height: 8),
 
@@ -158,12 +196,18 @@ class _PostTileState extends State<PostTile> {
                         icon: const Icon(Icons.chat_bubble_outline),
                         color: KakkoColors.muted,
                         onPressed: () {
-                          showDialog(
+                          final result = showDialog<bool>(
                             context: context,
                             builder: (context) {
                               return ReplyDialog(parentPost:post);
                             },
-                          );
+                            // ダイアログが閉じられたときに呼ばれるコールバック
+                          ).then( (value) {
+                            if (value == true) {
+                              widget.onReplySuccess?.call();
+                            }
+                          });
+
                         },
                       ),
 
@@ -195,6 +239,11 @@ class _PostTileState extends State<PostTile> {
 
                       Text(
                         "${post.like}",
+                        style:
+                            const TextStyle(
+                          color:
+                              KakkoColors.muted,
+                        ),
                       ),
                     ],
                   ),

@@ -181,9 +181,12 @@ class _TimelineState extends State<Timeline>
                                             (context,
                                                 index) {
                                           return PostTile(
-                                            post:
-                                                posts[
-                                                    index],
+                                            post:posts[index],
+                                            onReplySuccess: () {
+                                              setState(() {
+                                                _allTimelineFuture = _getTimeline();
+                                              });
+                                            },
                                           );
                                         },
                                       ),

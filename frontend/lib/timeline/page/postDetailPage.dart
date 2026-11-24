@@ -6,6 +6,7 @@ import 'package:frontend/core/kakko_theme.dart';
 import 'package:frontend/component/timeAgo.dart';
 import 'package:frontend/component/postReply.dart';
 import 'package:frontend/core/user_session.dart';
+import 'package:frontend/component/video.dart';
 
 class PostDetailPage extends StatefulWidget{
   final TimelineModel post;
@@ -26,6 +27,14 @@ class _PostDetailPageState extends State<PostDetailPage>{
   @override
   Widget build(BuildContext context){
     final post = widget.post;
+
+    final imageMedias = post.medias
+      .where((m) => m.mediaType == 'image')
+      .toList();
+
+    final videoMedias = post.medias
+      .where((m) => m.mediaType == 'video')
+      .toList();
 
     // プロフィールページに遷移する関数
     void _openProfile(BuildContext context) {
@@ -132,15 +141,41 @@ class _PostDetailPageState extends State<PostDetailPage>{
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    post.post,
-                    style: const TextStyle(
-                      color:KakkoColors.paperText,
+                  Expanded(
+                    child: Text(
+                      post.post,
+                      style: const TextStyle(
+                        color:KakkoColors.paperText,
+                      ),
                     ),
-                  ),
+                  )
                 ],
               ),
             ),
+            // image
+            if (post.medias.isNotEmpty)
+              Column(
+                children: [
+
+                  ...imageMedias.map(
+                    (m) => Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 4,
+                      ),
+                      child: Image.network(
+                        m.media,
+                      ),
+                    ),
+                  ),
+
+                  if (videoMedias.isNotEmpty)
+                    VideoWidget(
+                      url: videoMedias.first.media,
+                    ),
+                ],
+              ),
+            
+
             // 投稿時間
             Row(
               mainAxisAlignment: MainAxisAlignment.start,
