@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 MAX_IMAGES = 20
 MAX_IMAGES_BYTES = 10 * 1024 * 1024
-AX_VIDEO_BYTES = 200 * 1024 * 1024
+MAX_VIDEO_BYTES = 200 * 1024 * 1024
 
 
 # アップロード済みのファイルの確認をするため
@@ -26,7 +26,7 @@ def _check_keys(user, keys, max_bytes):
 
     for key in keys:
         if not isinstance(key, str) or not key.startswith(prefix):
-            return "invarid_key"
+            return "invalid_key"
 
         try:
             head = s3.head_object(
@@ -47,7 +47,7 @@ def _check_keys(user, keys, max_bytes):
 def workCreateView(request):
     header = request.headers.get("Authorization", "")
 
-    if not header.startswith("Bearer"):
+    if not header.startswith("Bearer "):
         return JsonResponse({"error": "no_token"}, status=401)
 
     try:
@@ -90,7 +90,7 @@ def workCreateView(request):
         if work_type == 2:
             max_count, max_bytes = MAX_IMAGES, MAX_IMAGES_BYTES
         else:
-            max_count, max_bytes = 1, AX_VIDEO_BYTES
+            max_count, max_bytes = 1, MAX_VIDEO_BYTES
 
         if not isinstance(keys, list) or not 1 <= len(keys) <= max_count:
             return JsonResponse({"error": "invalid_keys"}, status=400)
