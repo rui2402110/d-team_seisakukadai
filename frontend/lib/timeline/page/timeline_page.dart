@@ -4,6 +4,7 @@ import '../../component/navbar.dart';
 import '../../core/kakko_theme.dart';
 import '../repository/timeline_repository.dart';
 import '../../component/postTile.dart';
+import 'package:frontend/timeline/page/postForm.dart';
 
 class Timeline extends StatefulWidget {
   const Timeline({super.key});
@@ -222,31 +223,42 @@ class _TimelineState extends State<Timeline>
                                   }
 
                                   return RefreshIndicator(
-                                    color:
-                                        KakkoColors
-                                            .accent,
+                                    color: KakkoColors.accent,
 
-                                    onRefresh:
-                                        refreshTimeline,
+                                    onRefresh: refreshTimeline,
 
-                                    child:
-                                        ListView.builder(
+                                    child: ListView(
                                       physics:
                                           const AlwaysScrollableScrollPhysics(),
+                                      children: [
 
-                                      itemCount:
-                                          filteredPosts
-                                              .length,
+                                        PostForm(
+                                          communityId:
+                                              community.communityId,
+                                          communityName:
+                                              community.name,
+                                          onPosted: () {
 
-                                      itemBuilder:
-                                          (context,
-                                              index) {
-                                        return PostTile(
-                                          post:
-                                              filteredPosts[
-                                                  index],
-                                        );
-                                      },
+                                            setState(() {
+
+                                              _allTimelineFuture =
+                                                  _getTimeline();
+
+                                            });
+
+                                          },
+                                        ),
+
+                                        ...filteredPosts.map(
+                                          (post) => PostTile(
+                                            post: post,
+                                          ),
+                                        ),
+
+                                        const SizedBox(
+                                          height: 24,
+                                        ),
+                                      ],
                                     ),
                                   );
                                 },
