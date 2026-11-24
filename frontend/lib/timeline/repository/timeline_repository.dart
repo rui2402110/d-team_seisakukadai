@@ -65,8 +65,8 @@ class TimelineRepository{
     return data
     .map((e) => CommunityModel.fromJson(e))
     .toList();
-
   }
+  
   Map<String, dynamic> _decodeResponse(http.Response response) {
     final decoded = jsonDecode(utf8.decode(response.bodyBytes));
 
@@ -162,17 +162,18 @@ class TimelineModel {
   factory TimelineModel.fromJson(
     Map<String, dynamic> json,
   ) {
+
     final iconUrl = json['icon_url'] ?? '';
     return TimelineModel(
       postId: json['post_id'],
       userId: json['user_id'],
-      name: json['name'],
+      name: json['name'] ?? '',
       iconUrl: iconUrl.startsWith('http')
         ? iconUrl
         : '${ApiClient.baseUrl}$iconUrl',
       communityId: json['community_id'],
-      communityName: json['community_name'],
-      post: json['post'],
+      communityName: json['community_name'] ?? '',
+      post: json['post'] ?? '',
       like: json['like'],
       isLiked: json['is_liked'],
       replyId: json['reply_id'],

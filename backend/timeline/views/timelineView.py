@@ -70,9 +70,10 @@ def timelineView(request,post_id=None):
         medias = []
 
         for media in post.medias.all():
+            print("めでぃあ"+media.media)
             medias.append({
-                # "media": f"https://{bucket_name('posts')}.s3.amazonaws.com/{media.media}",
-                "medias":media.media,
+                "media": f"https://{bucket_name('posts')}.s3.amazonaws.com/{media.media}",
+                # "media":media.media,
                 "media_type": media.mediaType,
                 "media_number": media.mediaNumber,
             })
@@ -127,8 +128,8 @@ def myCommunityView(request):
         res.append({
             "community_id":member.community.pk,
             "name":member.community.name,
-            # "icon_url":member.community.icon_url,
-            # "is_favorite":member.is_favorite,
+            "icon_url":member.community.icon_url,
+            "is_favorite":member.is_favorite,
         })
 
     # safe=False:リストを返せるようにする

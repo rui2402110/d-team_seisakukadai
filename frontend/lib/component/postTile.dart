@@ -157,6 +157,21 @@ class _PostTileState extends State<PostTile> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        ...post.medias
+                          .where((m) => m.mediaType == 'image')
+                          .map((m) {
+
+                            print('url=${m.media}');
+                            
+                            return Image.network(
+                              m.media,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                print('error=$error');
+                                return const Text('画像エラー');
+                              },
+                            );
+                          }),
 
                         ...post.medias
                             .where((m) => m.mediaType == 'image')
@@ -224,15 +239,46 @@ class _PostTileState extends State<PostTile> {
 
                       const SizedBox(width: 20),
 
-                      Icon(
-                        post.isLiked
-                            ? Icons.favorite
-                            : Icons
-                                .favorite_border,
-                        color: post.isLiked
-                            ? Colors.red
-                            : KakkoColors.muted,
-                        size: 18,
+                      IconButton(
+                        icon: Icon(
+                          post.isLiked
+                              ? Icons.favorite
+                              : Icons.favorite_border,
+                          color: post.isLiked
+                              ? Colors.red
+                              : KakkoColors.muted,
+                        ),
+                        onPressed: () async {
+
+                          final oldLiked = post.isLiked;
+                          final oldLike = post.like;
+
+                          setState(() {
+                            post.isLiked = !post.isLiked;
+
+                            if (post.isLiked) {
+                              post.like++;
+                            } else {
+                              post.like--;
+                            }
+                          });
+
+                          try {
+
+                            await TimelineRepository().like(
+                              postId: post.postId,
+                            );
+
+                          } catch (e) {
+
+                            setState(() {
+                              post.isLiked = oldLiked;
+                              post.like = oldLike;
+                            });
+
+                            debugPrint(e.toString());
+                          }
+                        },
                       ),
 
                       const SizedBox(width: 4),
