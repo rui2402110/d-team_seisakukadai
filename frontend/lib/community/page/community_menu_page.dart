@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'community_create_page.dart';
 
 import '../repository/community_repository.dart';
+import 'community_detail_page.dart';
 
 import '../../component/navbar.dart';
 import '../../core/breakpoints.dart';
@@ -124,10 +125,12 @@ class _CommunityMenuPageState
   }
 
   /// コミュニティ詳細へ遷移
+  /// routes経由だとhot reloadで反映されないことがあるため、MaterialPageRouteで直接pushする
   void _openCommunity(Community community) {
-    Navigator.of(context).pushNamed(
-      '/community/detail',
-      arguments: community.id,
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => CommunityDetailPage(communityId: community.id),
+      ),
     );
   }
 

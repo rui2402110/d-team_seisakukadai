@@ -1,4 +1,4 @@
 from .communityMenuView import communityMenuView
-from .communityCreateView import communityCreateView
+from .communityDetailView import communityDetailView
 
-__all__ =["communityMenuView","communityCreateView"]
+__all__ = ["communityMenuView", "communityDetailView"]

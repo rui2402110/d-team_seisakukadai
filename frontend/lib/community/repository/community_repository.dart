@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -33,9 +32,7 @@ class CommunityRepository {
     final token = await _getToken();
 
     final response = await http.get(
-      Uri.parse(
-        '${ApiClient.baseUrl}/community/communitymenu/',
-      ),
+      Uri.parse('${ApiClient.baseUrl}/community/communitymenu/'),
       headers: ApiClient.headers(token),
     );
 
@@ -60,11 +57,12 @@ class CommunityRepository {
       return Map<String, dynamic>.from(item as Map);
     }).toList();
   }
+
   Future<int> createCommunity({
-    required String name,    
+    required String name,
     required String target,
     String detail = "",
-    required String icon_url
+    required String icon_url,
   }) async {
     final idToken = await ApiClient.idToken();
 
@@ -75,7 +73,7 @@ class CommunityRepository {
         'name': name,
         'target': target,
         'detail': detail,
-        'icon_url': icon_url
+        'icon_url': icon_url,
       }),
     );
     if (res.statusCode == 401) {
@@ -92,5 +90,29 @@ class CommunityRepository {
     }
     final data = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
     return (data['id'] as num).toInt();
+  }
+
+  // コミュニティ詳細取得
+  Future<Map<String, dynamic>> getCommunityDetail(int id) async {
+    final token = await _getToken();
+
+    final response = await http.get(
+      Uri.parse('${ApiClient.baseUrl}/community/communitydetail/$id/'),
+      headers: ApiClient.headers(token),
+    );
+
+    if (response.statusCode == 401) {
+      throw Exception('認証に失敗しました');
+    }
+
+    if (response.statusCode == 404) {
+      throw Exception('コミュニティが見つかりません');
+    }
+
+    if (response.statusCode != 200) {
+      throw Exception('コミュニティ詳細の取得に失敗しました');
+    }
+
+    return _decodeResponse(response);
   }
 }
