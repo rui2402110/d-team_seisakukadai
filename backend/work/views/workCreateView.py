@@ -36,7 +36,7 @@ def _check_keys(user, keys, max_bytes):
         if not isinstance(key, str) or not key.startswith(prefix):
             return "invalid_key"
 
-    
+    # 引数の下処理を返り値に追加
         try:
             head = s3.head_object(
                 Bucket=bucket_name("works"),
