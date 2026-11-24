@@ -86,10 +86,10 @@ class WorkPostRepository {
 
     final res = await http.put(
       Uri.parse(uploadUrl),
-      // headers: {'Content-Type': contentType},お
+      headers: {'Content-Type': contentType},
       body: bytes,
     );
-    print("$res");
+    print("${res.body}");
     if (res.statusCode != 200) {
       throw Exception('ファイルの送信に失敗しました。');
     }

@@ -1,3 +1,4 @@
+import os
 from django.http import JsonResponse
 from work.models import Work, Work_like, Work_relation, Work_image, Work_char, Work_movie
 from accounts.models import User
@@ -47,8 +48,9 @@ def workDetailView(request, workid):
             obj = Work_char.objects.filter(work=work).first()
             main = obj.main if obj else ""
         case 2:  # 画像: [{"main": URL}, ...] を image_number 順で返す
+            bucket = os.environ.get('AWS_S3_BUCKET_WORKS', '')
             main = [
-                {"main": img.main}
+                {"main": f"https://{bucket}.s3.amazonaws.com/{img.main}"}
                 for img in Work_image.objects.filter(work=work).order_by("image_number")
             ]
         case 3:  # 動画: URL(文字列)
