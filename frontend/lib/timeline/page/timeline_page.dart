@@ -207,21 +207,6 @@ class _TimelineState extends State<Timeline>
                                     },
                                   ).toList();
 
-                                  if (filteredPosts
-                                      .isEmpty) {
-                                    return const Center(
-                                      child: Text(
-                                        "投稿がありません",
-                                        style:
-                                            TextStyle(
-                                          color:
-                                              KakkoColors
-                                                  .muted,
-                                        ),
-                                      ),
-                                    );
-                                  }
-
                                   return RefreshIndicator(
                                     color: KakkoColors.accent,
 
@@ -248,6 +233,19 @@ class _TimelineState extends State<Timeline>
 
                                           },
                                         ),
+                                        if (filteredPosts.isEmpty)
+                                          const Padding(
+                                            padding: EdgeInsets.all(24),
+                                            child: Center(
+                                              child: Text(
+                                                "まだ投稿がありません\n最初の投稿をしてみましょう！",
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                  color: KakkoColors.muted,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
 
                                         ...filteredPosts.map(
                                           (post) => PostTile(

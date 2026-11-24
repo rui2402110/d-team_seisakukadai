@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:frontend/core/user_session.dart';
 import 'package:frontend/timeline/repository/timeline_post_repository.dart';
 import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:frontend/core/kakko_theme.dart';
 
 class PostForm extends StatefulWidget {
   final int communityId;
@@ -30,6 +33,7 @@ class _PostFormState extends State<PostForm> {
 
   XFile? selectedImage;
   XFile? selectedVideo;
+  Uint8List? imageBytes;
 
   @override
   void dispose() {
@@ -41,6 +45,7 @@ class _PostFormState extends State<PostForm> {
 
     String? mediaType;
     List<String>? keys;
+
 
     if (selectedImage != null ||
         selectedVideo != null) {
@@ -67,7 +72,7 @@ class _PostFormState extends State<PostForm> {
 
       final uploads =
           await repo.getUploadUrls(
-        1,
+        selectedImage != null ? 2 : 3,
         [contentType],
       );
 
@@ -93,6 +98,15 @@ class _PostFormState extends State<PostForm> {
       mediaType: mediaType,
       keys: keys,
     );
+    _postController.clear();
+
+    setState(() {
+      selectedImage = null;
+      selectedVideo = null;
+      icons = false;
+    });
+
+    widget.onPosted?.call();
   }
   // 画像投稿
   Future<void> pickImage() async {
@@ -102,9 +116,12 @@ class _PostFormState extends State<PostForm> {
 
     if (file == null) return;
 
+    final bytes = await file.readAsBytes();
+
     setState(() {
       selectedImage = file;
       selectedVideo = null;
+      imageBytes = bytes;
     });
   }
 
@@ -160,6 +177,7 @@ class _PostFormState extends State<PostForm> {
             style: const TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 15,
+              color: KakkoColors.paperText
             ),
           ),
 
@@ -204,25 +222,46 @@ class _PostFormState extends State<PostForm> {
           ),
 
           if (icons) ...[
+            // 表示
             if (selectedImage != null)
-            Padding(
-              padding: const EdgeInsets.only(
-                top: 8,
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    width: 150,
+                    height: 100,
+                    child: Image.file(
+                      File(selectedImage!.path),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
               ),
-              child: Image.network(
-                selectedImage!.path,
-                height: 200,
-                fit: BoxFit.cover,
+
+            if (selectedVideo != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Container(
+                  width: 150,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    color: Colors.black12,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.play_circle_fill,
+                      size: 40,
+                    ),
+                  ),
+                ),
               ),
-            ),
 
             const Divider(),
 
-            Wrap(
-              alignment:
-                  WrapAlignment
-                      .spaceBetween,
-              runSpacing: 8,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
 
                 Row(

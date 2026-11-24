@@ -66,6 +66,8 @@ def uploadUrlView(request):
 
     try:
         body = json.loads(request.body or "{}")          # 本文(JSON)を辞書に変換
+        print(request.body)
+        print(request.POST)
     except json.JSONDecodeError:
         # print("jisyo error")
         return JsonResponse({"error": "invalid_json"}, status=400)
