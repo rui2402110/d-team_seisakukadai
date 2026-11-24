@@ -43,9 +43,9 @@ Future<String?> checkVideo(XFile video) async {
 
 String? contentTypeOf(String fileName) {
   final n = fileName.toLowerCase();
-  if (n.endsWith('jpg') || n.endsWith('.jpeg')) return 'image/jpeg';
-  if (n.endsWith('png')) return 'image/png';
-  if (n.endsWith('.,mp4')) return 'video/mp4';
+  if (n.endsWith('.jpg') || n.endsWith('.jpeg')) return 'image/jpeg';
+  if (n.endsWith('.png')) return 'image/png';
+  if (n.endsWith('.mp4')) return 'video/mp4';
   return null;
   }
 
