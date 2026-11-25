@@ -54,6 +54,7 @@ def _check_keys(user, keys, max_bytes):
 @csrf_exempt      #アプリ（flutter）からのPOSTを受けるため、CSRFチェックを外す
 @require_POST     #POST以外（GETなど）で来たら、405エラーで断る
 def workCreateView(request):
+    # 認証を確認
     header = request.headers.get("Authorization", "")
 
     if not header.startswith("Bearer "):
@@ -75,9 +76,11 @@ def workCreateView(request):
     try:
         body = json.loads(request.body or "{}")
 
+    # jsonの値を取得
     except json.JSONDecodeError:
         return JsonResponse({"error": "invalid_json"}, status=400)
 
+    # jsonの値を変数に納める
     title = (body.get("title") or "").strip()
     work_type = body.get("work_type")
     work_detail = body.get("work_detail") or ""
@@ -88,7 +91,9 @@ def workCreateView(request):
     if work_type not in (1, 2, 3):
         return JsonResponse({"error": "invalid_work_type"}, status=400)
 
+    # 画像・動画のS3通行証を変数に納める　なければ空
     keys = body.get("keys") or []
+    # 文字作品のテキストを変数に納める　なければ空
     text = body.get("text") or ""
 
     if work_type == 1:
@@ -109,7 +114,9 @@ def workCreateView(request):
         if err:
             return JsonResponse({"error": err}, status=400)
 
+    # 処理が最後まで走らなかったらやめる
     with transaction.atomic():
+        # workテーブルにinsert
         work = Work.objects.create(
             user=user,
             title=title,
@@ -117,9 +124,11 @@ def workCreateView(request):
             work_detail=work_detail,
         )
 
+        # work_charテーブルにinsert
         if work_type == 1:
             Work_char.objects.create(work=work, main=text)
 
+        # work_imageテーブルにinsert
         elif work_type == 2:
             for n, key in enumerate(keys, start=1):
                 Work_image.objects.create(
@@ -128,6 +137,7 @@ def workCreateView(request):
                     image_number=n
                 )
 
+        # work_movieテーブルにinsert
         else:
             Work_movie.objects.create(
                 work=work,
