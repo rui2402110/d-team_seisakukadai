@@ -5,6 +5,7 @@ from timeline.models import Post, PostLikes
 from community.models import CommunityMember
 from core.firebase import verify_id_token
 from accounts.models import User
+from core.storage import bucket_name
 # ロガーの初期化（例外ログ出力用）
 logger = logging.getLogger(__name__)
 
@@ -28,6 +29,8 @@ def timelineView(request,post_id=None):
         posts = Post.objects.select_related(
             "user",
             "community"
+        ).prefetch_related(
+            "medias"
         ).filter(
             reply__isnull=True
         ).order_by("-createdAt")[:20]
@@ -37,6 +40,8 @@ def timelineView(request,post_id=None):
         posts = Post.objects.select_related(
             "user",
             "community"
+        ).prefetch_related(
+            "medias"
         ).filter(
             reply_id=post_id
         ).order_by("createdAt")
@@ -62,6 +67,17 @@ def timelineView(request,post_id=None):
 
     for post in posts:
 
+        medias = []
+
+        for media in post.medias.all():
+            print("めでぃあ"+media.media)
+            medias.append({
+                "media": f"https://{bucket_name('posts')}.s3.amazonaws.com/{media.media}",
+                # "media":media.media,
+                "media_type": media.mediaType,
+                "media_number": media.mediaNumber,
+            })
+
         result.append({
             "post_id": post.pk,
             "user_id": post.user.pk,
@@ -75,6 +91,7 @@ def timelineView(request,post_id=None):
             "reply_id": post.reply.pk if post.reply is not None else 0,
             "reply_count": post.replyCount,
             "created_at": post.createdAt,
+            "medias":medias
         })
 
     return JsonResponse(result, safe=False)
@@ -111,8 +128,8 @@ def myCommunityView(request):
         res.append({
             "community_id":member.community.pk,
             "name":member.community.name,
-            # "icon_url":member.community.icon_url,
-            # "is_favorite":member.is_favorite,
+            "icon_url":member.community.icon_url,
+            "is_favorite":member.is_favorite,
         })
 
     # safe=False:リストを返せるようにする

@@ -4,6 +4,7 @@ import '../../component/navbar.dart';
 import '../../core/kakko_theme.dart';
 import '../repository/timeline_repository.dart';
 import '../../component/postTile.dart';
+import 'package:frontend/timeline/page/postForm.dart';
 
 class Timeline extends StatefulWidget {
   const Timeline({super.key});
@@ -181,9 +182,12 @@ class _TimelineState extends State<Timeline>
                                             (context,
                                                 index) {
                                           return PostTile(
-                                            post:
-                                                posts[
-                                                    index],
+                                            post:posts[index],
+                                            onReplySuccess: () {
+                                              setState(() {
+                                                _allTimelineFuture = _getTimeline();
+                                              });
+                                            },
                                           );
                                         },
                                       ),
@@ -203,47 +207,56 @@ class _TimelineState extends State<Timeline>
                                     },
                                   ).toList();
 
-                                  if (filteredPosts
-                                      .isEmpty) {
-                                    return const Center(
-                                      child: Text(
-                                        "投稿がありません",
-                                        style:
-                                            TextStyle(
-                                          color:
-                                              KakkoColors
-                                                  .muted,
-                                        ),
-                                      ),
-                                    );
-                                  }
-
                                   return RefreshIndicator(
-                                    color:
-                                        KakkoColors
-                                            .accent,
+                                    color: KakkoColors.accent,
 
-                                    onRefresh:
-                                        refreshTimeline,
+                                    onRefresh: refreshTimeline,
 
-                                    child:
-                                        ListView.builder(
+                                    child: ListView(
                                       physics:
                                           const AlwaysScrollableScrollPhysics(),
+                                      children: [
 
-                                      itemCount:
-                                          filteredPosts
-                                              .length,
+                                        PostForm(
+                                          communityId:
+                                              community.communityId,
+                                          communityName:
+                                              community.name,
+                                          onPosted: () {
 
-                                      itemBuilder:
-                                          (context,
-                                              index) {
-                                        return PostTile(
-                                          post:
-                                              filteredPosts[
-                                                  index],
-                                        );
-                                      },
+                                            setState(() {
+
+                                              _allTimelineFuture =
+                                                  _getTimeline();
+
+                                            });
+
+                                          },
+                                        ),
+                                        if (filteredPosts.isEmpty)
+                                          const Padding(
+                                            padding: EdgeInsets.all(24),
+                                            child: Center(
+                                              child: Text(
+                                                "まだ投稿がありません\n最初の投稿をしてみましょう！",
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                  color: KakkoColors.muted,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+
+                                        ...filteredPosts.map(
+                                          (post) => PostTile(
+                                            post: post,
+                                          ),
+                                        ),
+
+                                        const SizedBox(
+                                          height: 24,
+                                        ),
+                                      ],
                                     ),
                                   );
                                 },

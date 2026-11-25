@@ -65,8 +65,8 @@ class TimelineRepository{
     return data
     .map((e) => CommunityModel.fromJson(e))
     .toList();
-
   }
+  
   Map<String, dynamic> _decodeResponse(http.Response response) {
     final decoded = jsonDecode(utf8.decode(response.bodyBytes));
 
@@ -141,6 +141,7 @@ class TimelineModel {
   final int replyId;
   int replyCount;
   final DateTime createdAt;
+  final List<MediaModel> medias;
 
   TimelineModel({
     required this.postId,
@@ -155,27 +156,37 @@ class TimelineModel {
     required this.replyId,
     required this.replyCount,
     required this.createdAt,
+    required this.medias,
   });
 
   factory TimelineModel.fromJson(
     Map<String, dynamic> json,
   ) {
+
     final iconUrl = json['icon_url'] ?? '';
     return TimelineModel(
       postId: json['post_id'],
       userId: json['user_id'],
-      name: json['name'],
+      name: json['name'] ?? '',
       iconUrl: iconUrl.startsWith('http')
         ? iconUrl
         : '${ApiClient.baseUrl}$iconUrl',
       communityId: json['community_id'],
-      communityName: json['community_name'],
-      post: json['post'],
+      communityName: json['community_name'] ?? '',
+      post: json['post'] ?? '',
       like: json['like'],
       isLiked: json['is_liked'],
       replyId: json['reply_id'],
       replyCount: json['reply_count'],
       createdAt: DateTime.parse(json['created_at']),
+      medias: (json['medias'] as List?)
+        ?.map(
+            (e) => MediaModel.fromJson(
+              e as Map<String, dynamic>,
+            ),
+          )
+          .toList() ??
+      [],
     );
   }
 }
@@ -195,6 +206,28 @@ class CommunityModel {
     return CommunityModel(
       communityId: json['community_id'], 
       name: json['name']
+    );
+  }
+}
+
+class MediaModel {
+  final String media;
+  final String mediaType;
+  final int mediaNumber;
+
+  MediaModel({
+    required this.media,
+    required this.mediaType,
+    required this.mediaNumber,
+  });
+
+  factory MediaModel.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    return MediaModel(
+      media: json['media'],
+      mediaType: json['media_type'],
+      mediaNumber: json['media_number'],
     );
   }
 }

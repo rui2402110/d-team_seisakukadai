@@ -47,9 +47,15 @@ Future<String?> checkVideo(XFile video) async {
 // 型チェック関数
 String? contentTypeOf(String fileName) {
   final n = fileName.toLowerCase();
+<<<<<<< HEAD
   if (n.endsWith('jpg') || n.endsWith('.jpeg')) return 'image/jpeg';
   if (n.endsWith('png')) return 'image/png';
   if (n.endsWith('mp4')) return 'video/mp4';
+=======
+  if (n.endsWith('.jpg') || n.endsWith('.jpeg')) return 'image/jpeg';
+  if (n.endsWith('.png')) return 'image/png';
+  if (n.endsWith('.mp4')) return 'video/mp4';
+>>>>>>> 4cef6f5cd9f1702526f069d1afeae060bcd7a911
   return null;
   }
 

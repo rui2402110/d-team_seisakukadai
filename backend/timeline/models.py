@@ -15,9 +15,17 @@ class Post(models.Model):
     createdAt = models.DateTimeField(auto_now_add=True)
 
 class PostMedia(models.Model):
+    # 投稿に紐づくメディア（画像や動画）を管理するモデル
+    IMAGE = "image"
+    VIDEO = "video"
+    MEDIA_TYPE_CHOICES = [
+        (IMAGE, "Image"),
+        (VIDEO, "Video")
+    ]
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="medias")
     media = models.CharField(max_length=1000)
     mediaNumber = models.PositiveSmallIntegerField(default=1)
+    mediaType = models.CharField(max_length=10, choices=MEDIA_TYPE_CHOICES, default=IMAGE)
 
     def __str__(self):
         return f"{self.post} - media {self.mediaNumber}"

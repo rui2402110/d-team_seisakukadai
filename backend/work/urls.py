@@ -13,8 +13,5 @@ urlpatterns = [
     path("workpost/",workPostView, name="workpost"),
     path("uploadurls/",uploadUrlView, name="uploadurls"),
     path("workcreate/",workCreateView, name="workcreate"),
-    
-    
-
 ]
 

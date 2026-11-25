@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/kakko_theme.dart';
 import 'package:frontend/timeline/repository/timeline_repository.dart';
+import 'package:frontend/timeline/repository/timeline_post_repository.dart';
 import '../timeline/page/postDetailPage.dart';
 import 'package:frontend/component/timeAgo.dart';
 import 'package:frontend/core/user_session.dart';
+import 'package:image_picker/image_picker.dart';
 
 class ReplyDialog extends StatefulWidget {
   final TimelineModel parentPost;
@@ -20,6 +22,60 @@ class ReplyDialog extends StatefulWidget {
 
 class _ReplyDialogState extends State<ReplyDialog> {
   final controller = TextEditingController();
+  final picker = ImagePicker();
+
+  List<XFile> images = [];
+  XFile? video;
+
+  List<String> uploadedKeys = [];
+  String? mediaType;
+
+  bool isSending = false;
+
+  // 画像を選択する
+  Future<void> pickImages() async {
+    final files = await picker.pickMultiImage();
+
+    if (files.isEmpty) return;
+
+    if (files.length > 4) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('画像は4枚までです'),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      images = files;
+      video = null;
+    });
+  }
+
+  // 動画を選択する
+  Future<void> pickVideo() async {
+    final file = await picker.pickVideo(
+      source: ImageSource.gallery,
+    );
+
+    if (file == null) return;
+
+    final err = await checkVideo(file);
+
+    if (err != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(err)),
+      );
+      return;
+    }
+
+    setState(() {
+      video = file;
+      images.clear();
+    });
+  }
+
   
   @override
   Widget build(BuildContext context) {
@@ -199,6 +255,9 @@ class _ReplyDialogState extends State<ReplyDialog> {
                     child: TextField(
                       controller: controller,
                       maxLines: null,
+                      style: const TextStyle(
+                        color: KakkoColors.paperText,
+                      ),
                       decoration: const InputDecoration(
                         border: InputBorder.none,
                         hintText: '返信を入力',
@@ -207,10 +266,125 @@ class _ReplyDialogState extends State<ReplyDialog> {
                   ),
                 ],
               ),
+              if (images.isNotEmpty)
+                Text(
+                  "${images.length}枚選択中",
+                  style: const TextStyle(
+                    color: KakkoColors.paperText,
+                  ),
+                ),
+
+              if (video != null)
+                Text(
+                  video!.name,
+                  style: const TextStyle(
+                    color: KakkoColors.paperText,
+                  ),
+                ),
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.image),
+                    onPressed: pickImages,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.videocam),
+                    onPressed: pickVideo,
+                  ),
+                ],
+              ),
               Align(
                 alignment: Alignment.centerRight,
                 child: ElevatedButton(
                   onPressed: () async {
+                    // 文字が入力されていない場合は何もしない
+                    if (controller.text.isEmpty) {
+                      return;
+                    }
+                    try{
+                      List<String> uplodedKeys = [];
+                      String? mediaType;
+                      final repository = TimelinePostRepository();
+
+                      //画像
+                      if (images.isNotEmpty) {
+
+                        mediaType = "image";
+
+                        final contentTypes =
+                            images.map((e) => contentTypeOf(e.name)!).toList();
+
+                        final uploads =
+                            await repository.getUploadUrls(
+                          2,
+                          contentTypes,
+                        );
+
+                        for (int i = 0; i < images.length; i++) {
+
+                          final bytes =
+                              await images[i].readAsBytes();
+
+                          await repository.putToS3(
+                            uploads[i]["upload_url"],
+                            contentTypes[i],
+                            bytes,
+                          );
+
+                          uploadedKeys.add(
+                            uploads[i]["key"],
+                          );
+                        }
+                      }
+
+                      // 動画
+                      if (video != null) {
+
+                        mediaType = "video";
+
+                        final contentType =
+                            contentTypeOf(video!.name)!;
+
+                        final uploads =
+                            await repository.getUploadUrls(
+                          3,
+                          [contentType],
+                        );
+
+                        final bytes =
+                            await video!.readAsBytes();
+
+                        await repository.putToS3(
+                          uploads[0]["upload_url"],
+                          contentType,
+                          bytes,
+                        );
+
+                        uploadedKeys.add(
+                          uploads[0]["key"],
+                        );
+                      }
+                      await TimelinePostRepository().createPost(
+                        communityId: post.communityId,
+                        post: controller.text,
+                        replyId: post.postId,
+                        keys: uploadedKeys.isEmpty
+                          ? null
+                          : uploadedKeys,
+                        mediaType: mediaType,
+                      );
+                      Navigator.pop(context, true);
+                      
+                    }catch (e) {
+
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(e.toString()),
+                          ),
+                        );
+                      }
+                    }
                     // reply API
                   },
                   child: const Text("返信"),
