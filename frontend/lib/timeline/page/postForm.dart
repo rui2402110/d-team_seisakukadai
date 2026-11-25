@@ -204,6 +204,9 @@ class _PostFormState extends State<PostForm> {
                   controller:
                       _postController,
                   maxLines: null,
+                  style: TextStyle(
+                    color: KakkoColors.paperText
+                  ),
                   decoration:
                       const InputDecoration(
                     border:

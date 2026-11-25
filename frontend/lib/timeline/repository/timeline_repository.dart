@@ -130,7 +130,7 @@ class TimelineRepository{
 
 class TimelineModel {
   final int postId;
-  final int userId;
+  final String userId;
   final String name;
   final String iconUrl;
   final int communityId;

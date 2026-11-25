@@ -6,6 +6,7 @@ import 'package:frontend/component/timeAgo.dart';
 import 'package:frontend/component/postReply.dart';
 import 'package:frontend/timeline/page/timeline_page.dart';
 import 'package:frontend/component/video.dart';
+import 'package:frontend/profile/page/profile.dart';
 
 class PostTile extends StatefulWidget {
   final TimelineModel post;
@@ -22,12 +23,6 @@ class PostTile extends StatefulWidget {
 }
 
 class _PostTileState extends State<PostTile> {
-  void _openProfile(BuildContext context) {
-    if (ModalRoute.of(context)?.settings.name == '/profile') return;
-
-    Navigator.of(context).pushNamed('/profile');
-  }
-
   @override
   Widget build(BuildContext context) {
     final post = widget.post;
@@ -77,17 +72,33 @@ class _PostTileState extends State<PostTile> {
                   /// 名前行
                   Row(
                     children: [
-                      Text(
-                        post.name,
-                        style: const TextStyle(
-                          color:
-                              KakkoColors.paperText,
-                          fontWeight:
-                              FontWeight.bold,
+                      TextButton(
+                        onPressed: (){
+                          Navigator.push(context,
+                          MaterialPageRoute(builder: (context) => Profile(user_id:"${post.userId}")))
+                          ;
+                        }, 
+                        child: Text(
+                          post.name,
+                          style: const TextStyle(
+                            color:
+                                KakkoColors.paperText,
+                            fontWeight:
+                                FontWeight.bold,
+                          ),
                         ),
                       ),
+                      // Text(
+                      //   post.name,
+                      //   style: const TextStyle(
+                      //     color:
+                      //         KakkoColors.paperText,
+                      //     fontWeight:
+                      //         FontWeight.bold,
+                      //   ),
+                      // ),
 
-                      const SizedBox(width: 6),
+                      // const SizedBox(width: 6),
                       Text(
                         '@${post.userId}',
                         style: const TextStyle(

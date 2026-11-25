@@ -17,7 +17,9 @@ class ProfileRepository {
 
   // Djangoからプロフィールを取得する
   // ログイン確認とトークン取得はここで行う(画面側では行わない)
-  Future<Map<String, dynamic>> getUserProfile({String? userId}) async {
+  Future<Map<String, dynamic>> getUserProfile({
+    String? userId
+  }) async {
 
     // ログイン中ユーザーのIDトークンを取得(未ログインなら ApiException)
     final idToken = await ApiClient.idToken();
