@@ -12,11 +12,14 @@ import 'package:video_player/video_player.dart';
 const int kMaxVideoSeconds = 120;
 const int kMaxVideoBytes = 200 * 1024 * 1024;
 
+// 動画のチェックを行う関数
 Future<String?> checkVideo(XFile video) async {
+  // mp4でなければreturn
   if (!video.name.toLowerCase().endsWith('.mp4')) {
     return '動画は mp4 形式のみ投稿できます';
   }
 
+  // 長さチェック
   final size = await video.length();
   if (size > kMaxVideoBytes) {
     //   final mb = (size / 1024 / 1024).toStringAsFixed(1);
@@ -41,6 +44,7 @@ Future<String?> checkVideo(XFile video) async {
   return null;
 }
 
+// 型チェック関数
 String? contentTypeOf(String fileName) {
   final n = fileName.toLowerCase();
   if (n.endsWith('.jpg') || n.endsWith('.jpeg')) return 'image/jpeg';
@@ -51,12 +55,15 @@ String? contentTypeOf(String fileName) {
 
 
 class WorkPostRepository {
+  // S3の通行証を作成してもらう関数
   Future<List<Map<String, dynamic>>> getUploadUrls(
     int workType,
     List<String> contentType,
   ) async {
+    // IDトークンを確認
     final idToken = await ApiClient.idToken();
 
+    // DjangoのAPIに必要な値を詰めて送信
     final res = await http.post(
       Uri.parse('${ApiClient.baseUrl}/work/uploadurls/'),
       headers: ApiClient.headers(idToken),
@@ -70,11 +77,13 @@ class WorkPostRepository {
     if (res.statusCode != 200) {
       throw Exception('アップロードの準備に失敗しました');
     }
+    // DjangoAPIの返り値を加工
     final data = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+    // 加工した返り値をreturn
     return List<Map<String, dynamic>>.from(data['uploads']);
   }
 
-  // ファイルの
+  // ファイルをS3に送信
 
   Future<void> putToS3(
     String uploadUrl,
@@ -84,6 +93,7 @@ class WorkPostRepository {
     print(uploadUrl);
     print(contentType);
 
+    // S3に値を送信
     final res = await http.put(
       Uri.parse(uploadUrl),
       headers: {'Content-Type': contentType},
@@ -95,6 +105,7 @@ class WorkPostRepository {
     }
   }
 
+  // 作品をDBにinsertする関数
   Future<int> createWork({
     required String title,
     required int workType,
@@ -103,8 +114,10 @@ class WorkPostRepository {
     List<String>? keys,
     List<int> relationIds = const[],
   }) async {
+    // IDトークンを確認
     final idToken = await ApiClient.idToken();
 
+    // 必要な値を詰めてDjangoAPIに送信
     final res = await http.post(
       Uri.parse('${ApiClient.baseUrl}/work/workcreate/'),
       headers: ApiClient.headers(idToken),
@@ -133,7 +146,9 @@ class WorkPostRepository {
       throw ApiException('作品の投稿に失敗しました(${res.statusCode})');
     }
 
+    // Djangoの返り値を加工
     final data = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+    // idを送信
     return (data['id'] as num).toInt();
   }
 }
