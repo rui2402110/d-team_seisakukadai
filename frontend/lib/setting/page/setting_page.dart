@@ -1,9 +1,11 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../auth/page/auth_gate.dart';
 import '../../auth/repository/auth_repository.dart';
 import '../../component/navbar.dart';
 import '../../core/kakko_theme.dart';
+import '../repository/mute_word.dart';
 
 // デモ版 settings.css の danger 赤 (#e07b7b) に相当する色
 const Color _danger = Color(0xFFE07B7B);
@@ -20,8 +22,10 @@ class Setting extends StatefulWidget {
 }
 
 class _SettingState extends State<Setting> {
-  // ミュートワード（デモ版 community-common.js の初期値と同じ。現状は画面ローカル状態）
-  final List<String> _muteWords = ['ネタバレ', '最終回'];
+  // ミュートワード（UC-17: shared_preferences にユーザーID単位で保存）
+  final _muteRepo = MuteWordRepository();
+  List<String> _muteWords = [];
+  bool _muteLoaded = false;
   final _muteController = TextEditingController();
 
   // 一覧のインライン編集状態（編集中のindex。nullなら非編集）
@@ -31,11 +35,29 @@ class _SettingState extends State<Setting> {
   // 認証まわり（ログアウトで使用）
   final _authRepository = AuthRepository();
 
+  /// ミュートワードをユーザーID単位で保存するためのID（未ログイン時は 'local'）
+  String get _userId => FirebaseAuth.instance.currentUser?.uid ?? 'local';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMuteWords();
+  }
+
   @override
   void dispose() {
     _muteController.dispose();
     _editController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadMuteWords() async {
+    final words = await _muteRepo.getAll(_userId);
+    if (!mounted) return;
+    setState(() {
+      _muteWords = words;
+      _muteLoaded = true;
+    });
   }
 
   // デモ版のトースト相当（画面下部にふわっと出る）
@@ -58,29 +80,32 @@ class _SettingState extends State<Setting> {
     );
   }
 
-  // ---- ミュートワード操作 ----
-  void _addMuteWord() {
+  // ---- ミュートワード操作（UC-17: repository経由で保存） ----
+  Future<void> _addMuteWord() async {
     final word = _muteController.text.trim();
     if (word.isEmpty) return;
-    if (_muteWords.contains(word)) {
+    final ok = await _muteRepo.add(_userId, word);
+    if (!mounted) return;
+    if (!ok) {
+      // UC-17: 重複登録の場合
       _toast('すでに登録されています');
       return;
     }
-    setState(() {
-      _muteWords.add(word);
-      _muteController.clear();
-    });
+    _muteController.clear();
+    await _loadMuteWords();
   }
 
-  void _removeMuteWord(int index) {
+  Future<void> _removeMuteWord(int index) async {
+    await _muteRepo.remove(_userId, index);
+    if (!mounted) return;
     setState(() {
-      _muteWords.removeAt(index);
       if (_editingIndex == index) {
         _editingIndex = null;
       } else if (_editingIndex != null && _editingIndex! > index) {
         _editingIndex = _editingIndex! - 1;
       }
     });
+    await _loadMuteWords();
   }
 
   void _startEdit(int index) {
@@ -90,13 +115,20 @@ class _SettingState extends State<Setting> {
     });
   }
 
-  void _commitEdit(int index) {
+  Future<void> _commitEdit(int index) async {
     final v = _editController.text.trim();
-    setState(() {
-      // デモ版と同じく、空の場合は更新しない
-      if (v.isNotEmpty) _muteWords[index] = v;
-      _editingIndex = null;
-    });
+    if (v.isNotEmpty) {
+      final ok = await _muteRepo.update(_userId, index, v);
+      if (!mounted) return;
+      if (!ok) {
+        // UC-17: 重複する単語への更新の場合
+        _toast('すでに登録されています');
+      }
+    }
+    // 空の場合は更新せず編集を終了する（デモ版と同じ）
+    if (!mounted) return;
+    setState(() => _editingIndex = null);
+    await _loadMuteWords();
   }
 
   // ---- ログアウト ----
@@ -439,8 +471,8 @@ class _SettingState extends State<Setting> {
             ],
           ),
           const SizedBox(height: 16),
-          // 一覧 or 空メッセージ
-          if (_muteWords.isEmpty)
+          // 一覧 or 空メッセージ（読み込み完了後のみ空表示を出す）
+          if (_muteLoaded && _muteWords.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 10),
               child: Center(

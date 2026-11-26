@@ -25,5 +25,6 @@ urlpatterns = [
     path("profiles/",include("profiles.urls")),
     path("community/",include("community.urls")),
     path("timeline/",include("timeline.urls")),
+    path("settings/",include("usersettings.urls")),
 ]
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
