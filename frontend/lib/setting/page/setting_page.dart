@@ -4,6 +4,7 @@ import '../../auth/page/auth_gate.dart';
 import '../../auth/repository/auth_repository.dart';
 import '../../component/navbar.dart';
 import '../../core/kakko_theme.dart';
+import '../repository/setting_repository.dart';
 
 // デモ版 settings.css の danger 赤 (#e07b7b) に相当する色
 const Color _danger = Color(0xFFE07B7B);
@@ -20,8 +21,10 @@ class Setting extends StatefulWidget {
 }
 
 class _SettingState extends State<Setting> {
-  // ミュートワード（デモ版 community-common.js の初期値と同じ。現状は画面ローカル状態）
-  final List<String> _muteWords = ['ネタバレ', '最終回'];
+  // ミュートワード（UC-17: サーバーに保存。SettingRepository経由でAPIを叩く）
+  final _settingRepo = SettingRepository();
+  List<Map<String, dynamic>> _muteWords = [];
+  bool _muteLoaded = false;
   final _muteController = TextEditingController();
 
   // 一覧のインライン編集状態（編集中のindex。nullなら非編集）
@@ -32,10 +35,37 @@ class _SettingState extends State<Setting> {
   final _authRepository = AuthRepository();
 
   @override
+  void initState() {
+    super.initState();
+    _loadMuteWords();
+  }
+
+  @override
   void dispose() {
     _muteController.dispose();
     _editController.dispose();
     super.dispose();
+  }
+
+  // 一覧のミュートワード文字列を取得
+  String _wordOf(int index) => (_muteWords[index]['mute_word'] ?? '').toString();
+
+  // 一覧のミュートワードのpk（更新/削除で使う）
+  int _idOf(int index) => (_muteWords[index]['id'] as num).toInt();
+
+  Future<void> _loadMuteWords() async {
+    try {
+      final words = await _settingRepo.getMuteWords();
+      if (!mounted) return;
+      setState(() {
+        _muteWords = words;
+        _muteLoaded = true;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _muteLoaded = true);
+      _toast(e.toString().replaceFirst('Exception: ', ''));
+    }
   }
 
   // デモ版のトースト相当（画面下部にふわっと出る）
@@ -58,45 +88,64 @@ class _SettingState extends State<Setting> {
     );
   }
 
-  // ---- ミュートワード操作 ----
-  void _addMuteWord() {
+  // ---- ミュートワード操作（UC-17: SettingRepository経由でサーバーに保存） ----
+  Future<void> _addMuteWord() async {
     final word = _muteController.text.trim();
     if (word.isEmpty) return;
-    if (_muteWords.contains(word)) {
-      _toast('すでに登録されています');
+    try {
+      await _settingRepo.addMuteWord(word);
+    } catch (e) {
+      if (!mounted) return;
+      // UC-17: 重複登録の場合などサーバーからのエラーをそのまま表示
+      _toast(e.toString().replaceFirst('Exception: ', ''));
       return;
     }
-    setState(() {
-      _muteWords.add(word);
-      _muteController.clear();
-    });
+    if (!mounted) return;
+    _muteController.clear();
+    await _loadMuteWords();
   }
 
-  void _removeMuteWord(int index) {
+  Future<void> _removeMuteWord(int index) async {
+    try {
+      await _settingRepo.deleteMuteWord(_idOf(index));
+    } catch (e) {
+      if (!mounted) return;
+      _toast(e.toString().replaceFirst('Exception: ', ''));
+      return;
+    }
+    if (!mounted) return;
     setState(() {
-      _muteWords.removeAt(index);
       if (_editingIndex == index) {
         _editingIndex = null;
       } else if (_editingIndex != null && _editingIndex! > index) {
         _editingIndex = _editingIndex! - 1;
       }
     });
+    await _loadMuteWords();
   }
 
   void _startEdit(int index) {
     setState(() {
       _editingIndex = index;
-      _editController.text = _muteWords[index];
+      _editController.text = _wordOf(index);
     });
   }
 
-  void _commitEdit(int index) {
+  Future<void> _commitEdit(int index) async {
     final v = _editController.text.trim();
-    setState(() {
-      // デモ版と同じく、空の場合は更新しない
-      if (v.isNotEmpty) _muteWords[index] = v;
-      _editingIndex = null;
-    });
+    if (v.isNotEmpty && v != _wordOf(index)) {
+      try {
+        await _settingRepo.updateMuteWord(_idOf(index), v);
+      } catch (e) {
+        if (!mounted) return;
+        // UC-17: 重複する単語への更新の場合
+        _toast(e.toString().replaceFirst('Exception: ', ''));
+      }
+    }
+    // 空または変更なしの場合は更新せず編集を終了する（デモ版と同じ）
+    if (!mounted) return;
+    setState(() => _editingIndex = null);
+    await _loadMuteWords();
   }
 
   // ---- ログアウト ----
@@ -439,8 +488,8 @@ class _SettingState extends State<Setting> {
             ],
           ),
           const SizedBox(height: 16),
-          // 一覧 or 空メッセージ
-          if (_muteWords.isEmpty)
+          // 一覧 or 空メッセージ（読み込み完了後のみ空表示を出す）
+          if (_muteLoaded && _muteWords.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 10),
               child: Center(
@@ -502,7 +551,7 @@ class _SettingState extends State<Setting> {
                     onSubmitted: (_) => _commitEdit(index),
                   )
                 : Text(
-                    _muteWords[index],
+                    _wordOf(index),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
