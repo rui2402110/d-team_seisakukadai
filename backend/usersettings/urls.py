@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import muteWordView
+from usersettings.views.muteWordView import muteWordView
 
 urlpatterns = [
     # ミュートワード一覧を取得
