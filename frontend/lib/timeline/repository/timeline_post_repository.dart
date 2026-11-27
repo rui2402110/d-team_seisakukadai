@@ -52,6 +52,7 @@ String? contentTypeOf(String fileName) {
 class TimelinePostRepository {
   Future<List<Map<String, dynamic>>> getUploadUrls(
     int postType,
+    int reprlyId,
     List<String> contentType,
   ) async {
     final idToken = await ApiClient.idToken();
@@ -59,7 +60,9 @@ class TimelinePostRepository {
     final res = await http.post(
       Uri.parse('${ApiClient.baseUrl}/timeline/uploadurls/'),
       headers: ApiClient.headers(idToken),
-      body: jsonEncode({'post_type': postType, 'content_types': contentType}),
+      body: reprlyId == 0
+      ? jsonEncode({'post_type': postType, 'content_types': contentType})
+      : jsonEncode({'post_type': postType, 'content_types': contentType, 'reply_id':reprlyId})
     );
 
     if (res.statusCode == 401) {

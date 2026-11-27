@@ -9,10 +9,12 @@ import 'package:frontend/core/kakko_theme.dart';
 class PostForm extends StatefulWidget {
   final int communityId;
   final String communityName;
+  final int replyId;
   final VoidCallback? onPosted;
 
   const PostForm({
     super.key,
+    required this.replyId,
     required this.communityId,
     required this.communityName,
     this.onPosted,
@@ -27,13 +29,18 @@ class _PostFormState extends State<PostForm> {
       TextEditingController();
 
   bool icons = false;
-  bool posting = false;
+  bool get canPost {
+    final hasText = _postController.text.trim().isNotEmpty;
+    final hasMedia = selectedImages.isNotEmpty || selectedVideo != null;
+    return hasText || hasMedia;
+  }
 
   final ImagePicker picker = ImagePicker();
 
-  XFile? selectedImage;
+  List<XFile> selectedImages=[];
   XFile? selectedVideo;
-  Uint8List? imageBytes;
+  List<Uint8List> imageBytesList=[];
+  int replyId = 0;
 
   @override
   void dispose() {
@@ -45,92 +52,152 @@ class _PostFormState extends State<PostForm> {
 
     String? mediaType;
     List<String>? keys;
+    
+    // 存在するかどうか(bool)
+    final hasImages = selectedImages.isNotEmpty;
+    final hasVideo = selectedVideo != null;
 
+    // 画像または動画が存在する
+    if(hasImages || hasVideo){
+      final repo =TimelinePostRepository();
 
-    if (selectedImage != null ||
-        selectedVideo != null) {
+      // 画像
+      if(hasImages){
+        mediaType = "image";
 
-      final file =
-          selectedImage ?? selectedVideo!;
+        final List<String>contentTypes =[];
+        for(final file in selectedImages){
+          // ファイル名からコンテンツタイプ（MIMEタイプ）を取得
+          final ct = contentTypeOf(file.name);
+          if(ct == null){
+            throw Exception("未対応の画像形式です:${file.name}");
+          }
+          contentTypes.add(ct);
+        }
 
-      mediaType =
-          selectedImage != null
-          ? "image"
-          : "video";
+        // 画像枚数分アップロード先のURLを取得
+        final uploads = await repo.getUploadUrls(2,replyId,contentTypes);
 
-      final contentType =
-          contentTypeOf(file.name);
+        // 順番を保ったまま各画像をS3へアップロードしkeyを収集
+        final List<String> uplodedKeys=[];
+        for(int i=0; i<imageBytesList.length;i++){
+          // フォールバック処理
+          final bytes = i < imageBytesList.length
+            // imageBytesList に既に読み込み済みデータ
+            ? imageBytesList[i]
+            // なければselectedImages から直接読み込む
+            : await selectedImages[i].readAsBytes();
+          
+          await repo.putToS3(
+            uploads[i]["upload_url"],
+            contentTypes[i], 
+            bytes
+          );
+          uplodedKeys.add(uploads[i]["key"]);
 
-      if (contentType == null) {
-        throw Exception(
-          "未対応の形式です",
+          keys = uplodedKeys;
+        } 
+      }else if(hasVideo){
+        mediaType = "video";
+        final videoFile = selectedVideo!;
+
+        final contentType = contentTypeOf(videoFile.name);
+        if(contentType == null){
+          throw Exception("未対応の動画形式です: ${videoFile.name}");
+        }
+
+        final uploads = await repo.getUploadUrls(3, replyId,[contentType]);
+        final bytes = await videoFile.readAsBytes();
+
+        await repo.putToS3(
+          uploads[0]["upload_url"], 
+          contentType, 
+          bytes
         );
+
+        keys = [uploads[0]["key"]];
       }
-
-      final repo =
-          TimelinePostRepository();
-
-      final uploads =
-          await repo.getUploadUrls(
-        selectedImage != null ? 2 : 3,
-        [contentType],
-      );
-
-      final bytes =
-          await file.readAsBytes();
-
-      await repo.putToS3(
-        uploads[0]["upload_url"],
-        contentType,
-        bytes,
-      );
-
-      keys = [
-        uploads[0]["key"]
-      ];
     }
 
-    await TimelinePostRepository()
-        .createPost(
-      communityId:
-          widget.communityId,
+    // 投稿
+    await TimelinePostRepository().createPost(
+      communityId:widget.communityId,
       post: _postController.text,
       mediaType: mediaType,
       keys: keys,
     );
+
+    // コントローラクリア
     _postController.clear();
 
     setState(() {
-      selectedImage = null;
+      selectedImages.clear();
+      imageBytesList.clear();
       selectedVideo = null;
       icons = false;
     });
 
     widget.onPosted?.call();
   }
-  // 画像投稿
-  Future<void> pickImage() async {
-    final file = await picker.pickImage(
-      source: ImageSource.gallery,
+  // 画像投稿(1枚のみ)
+  // Future<void> pickImage() async {
+  //   final file = await picker.pickImage(
+  //     source: ImageSource.gallery,
+  //   );
+
+  //   // ユーザーキャンセル時データをNULL
+  //   if (file == null) return;
+  //   // プレビュー用にバイトデータを取得する
+  //   final bytes = await file.readAsBytes();
+
+  //   setState(() {
+  //     selectedImages = file;
+  //     selectedVideo = null;
+  //     imageBytesList = bytes;
+  //   });
+  // }
+
+  //画像複数枚または動画投稿
+  Future<void> pickMultiImages() async{
+    const maxImages = 4;
+    final remaining = maxImages - selectedImages.length;
+    // 上限に達した
+    if (remaining <= 0) return;
+
+    final picked =  await picker.pickMultiImage(
+      // 残り上限枚数
+      limit: remaining
     );
+    // ファイルの中身が何もなかった
+    if (picked.isEmpty) return;
 
-    if (file == null) return;
-
-    final bytes = await file.readAsBytes();
+    // 新しく追加された分だけバイトデータを読み込む
+    final List<Uint8List> newBytes = [];
+    for (final file in picked) {
+      newBytes.add(await file.readAsBytes());
+    }
+    // 画面が閉じられていた場合、
+    // 以降の処理を中断して抜ける
+    if (!mounted) return;
 
     setState(() {
-      selectedImage = file;
+      selectedImages = [
+        ...selectedImages,
+        ...picked.take(remaining), // Web等 limit が効かない環境向け
+      ];
+      imageBytesList = [
+        ...imageBytesList,
+        ...newBytes.take(remaining),
+      ];
       selectedVideo = null;
-      imageBytes = bytes;
     });
-  }
+}
 
   // 動画投稿
   Future<void> pickVideo() async {
     final file = await picker.pickVideo(
       source: ImageSource.gallery,
     );
-
     if (file == null) return;
 
     final error = await checkVideo(file);
@@ -151,12 +218,13 @@ class _PostFormState extends State<PostForm> {
 
     setState(() {
       selectedVideo = file;
-      selectedImage = null;
+      selectedImages.clear();
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    replyId = widget.replyId;
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
@@ -226,20 +294,66 @@ class _PostFormState extends State<PostForm> {
 
           if (icons) ...[
             // 表示
-            if (selectedImage != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: SizedBox(
-                    width: 150,
-                    height: 100,
-                    child: Image.file(
-                      File(selectedImage!.path),
-                      fit: BoxFit.cover,
-                    ),
+            if (imageBytesList.isNotEmpty)
+              // Padding(
+              //   padding: const EdgeInsets.only(top: 8),
+              //   child: ClipRRect(
+              //     borderRadius: BorderRadius.circular(12),
+              //     child: SizedBox(
+              //       width: 150,
+              //       height: 100,
+              //       child: Image.memory(imageBytesList!)
+              //     ),
+              //   ),
+              // ),
+              SizedBox(
+                height: 110,
+                // 画面に表示される部分だけを生成
+                child: ListView.separated(
+                    // 左右スクロール
+                    scrollDirection: Axis.horizontal,
+                    itemCount: imageBytesList.length,
+                    // リストのアイテム間に8ピクセルの横方向（水平）の余白
+                    separatorBuilder: (_,__) => const SizedBox(width: 8),
+                    itemBuilder: (context, index){
+                      // 重ねて配置
+                      return Stack(
+                        children: [
+                          // 角丸の長方形で切り抜く
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            // 各画像
+                            child: Image.memory(
+                              imageBytesList[index],
+                              width: 110,
+                              height: 110,
+                              // 縦横比率を変えずに枠いっぱい
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          // 個別削除ボタン
+                          Positioned(
+                            top: 4,
+                            right: 4,
+                            child: GestureDetector(
+                              onTap: (){
+                                setState(() {
+                                  // 削除
+                                  imageBytesList.removeAt(index);
+                                  selectedImages.removeAt(index);
+                                });
+                              },
+                              // 丸く表示
+                              child: const CircleAvatar(
+                                radius: 12,
+                                child: Icon(Icons.close,size: 14),
+                              ),
+                            )
+                          )
+                        ],
+                      );
+                    },
                   ),
-                ),
               ),
 
             if (selectedVideo != null)
@@ -274,7 +388,7 @@ class _PostFormState extends State<PostForm> {
 
                     // 画像投稿
                     IconButton(
-                      onPressed: pickImage,
+                      onPressed: pickMultiImages,
                       icon: const Icon(
                         Icons.image,
                       ),
@@ -315,6 +429,9 @@ class _PostFormState extends State<PostForm> {
                             ?.unfocus();
 
                         setState(() {
+                          _postController.clear();
+                          selectedImages.clear();
+                          selectedVideo=null;
                           icons = false;
                         });
                       },
@@ -329,21 +446,32 @@ class _PostFormState extends State<PostForm> {
 
                     ElevatedButton(
                       onPressed:
-                          posting
-                              ? null
-                              : _submit,
-                      child: posting
-                          ? const SizedBox(
-                              height: 18,
-                              width: 18,
-                              child:
-                                  CircularProgressIndicator(
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Text(
-                              "投稿",
+                        canPost
+                          ? _submit
+                          : null,
+                      style:
+                        canPost
+                        ? ElevatedButton.styleFrom(
+                            backgroundColor: KakkoColors.muted
+                          )
+                        : ElevatedButton.styleFrom(
+                            backgroundColor: KakkoColors.ink
+                          ),
+                      child: 
+                        canPost
+                        ? Text(
+                            "投稿",
+                            style: TextStyle(
+                              color: KakkoColors.paperText
                             ),
+                          )
+                        : Text(
+                            "投稿",
+                            style: TextStyle(
+                              color: KakkoColors.inkSoft
+                            ),
+                          )
+                      
                     ),
                   ],
                 ),

@@ -317,6 +317,7 @@ class _ReplyDialogState extends State<ReplyDialog> {
                         final uploads =
                             await repository.getUploadUrls(
                           2,
+                          post.postId,
                           contentTypes,
                         );
 
@@ -348,6 +349,7 @@ class _ReplyDialogState extends State<ReplyDialog> {
                         final uploads =
                             await repository.getUploadUrls(
                           3,
+                          post.replyId,
                           [contentType],
                         );
 

@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 # 許可するファイル形式。　｛Content-type: 拡張子｝
 # ここに無い形式は、アップロードさせない（想定内のファイルを防ぐ）
 
-IMAGE_TYPES = {"image/jpeg": ".jpg","image/png": ".jpeg","image/png": ".png","image/png": ".webp","image/png": ".gif"}
+IMAGE_TYPES = {"image/jpeg": ".jpg","image/png": ".png"}
 VIDEO_TYPES = {"video/mp4": ".mp4"}
 
 MAX_IMAGES = 4     #画像は1投稿につき4枚まで

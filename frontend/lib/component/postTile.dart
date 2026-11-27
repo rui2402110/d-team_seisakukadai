@@ -185,24 +185,6 @@ class _PostTileState extends State<PostTile> {
                           }),
 
                         ...post.medias
-                            .where((m) => m.mediaType == 'image')
-                            .map(
-                              (m) => Padding(
-                                padding: const EdgeInsets.only(
-                                  bottom: 8,
-                                ),
-                                child: ClipRRect(
-                                  borderRadius:
-                                      BorderRadius.circular(12),
-                                  child: Image.network(
-                                    m.media,
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                        ...post.medias
                             .where((m) => m.mediaType == 'video')
                             .map(
                               (m) => VideoWidget(

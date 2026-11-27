@@ -218,6 +218,7 @@ class _TimelineState extends State<Timeline>
                                       children: [
 
                                         PostForm(
+                                          replyId: 0,
                                           communityId:
                                               community.communityId,
                                           communityName:
