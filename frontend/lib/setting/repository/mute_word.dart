@@ -7,7 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// - 登録(add)・全件取得(getAll)・更新(update)・削除(remove)
 /// - 登録/更新時は重複していれば false を返す（画面側で「すでに登録されています」表示）
 ///
-/// 保存先は shared_preferences（端末ローカル）。要件の「Cookieに保存」に相当する
+/// 保存先はshared_preferences。サーバーで保存。
 /// クライアント側の永続化。キーはユーザーIDごとに分ける。
 class MuteWordRepository {
   /// デモ版 community-common.js の初期値と同じ

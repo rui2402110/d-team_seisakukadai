@@ -1,8 +1,9 @@
 from django.http import JsonResponse
-from usersettings.models import muteWord
+from usersettings.models import MuteWord
 #modelsのユーザーをインポート
 from accounts.models import User
 import logging
+from core.firebase import verify_id_token
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,6 @@ def muteWordView(request):
         return JsonResponse({"error": "user_not_found"}, status=404)
 
     # ユーザーのミュートワードを取得
-    muteWord = muteWord.objects.filter(user=user).all()
+    muteWords = MuteWord.objects.filter(user=user).all()
     
-    return JsonResponse({"muteWord": muteWord.values()})
+    return JsonResponse({"muteWord": list(muteWords.values())}, status=200)

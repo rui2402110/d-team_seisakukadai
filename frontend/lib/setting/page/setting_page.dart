@@ -1,11 +1,10 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../auth/page/auth_gate.dart';
 import '../../auth/repository/auth_repository.dart';
 import '../../component/navbar.dart';
 import '../../core/kakko_theme.dart';
-import '../repository/mute_word.dart';
+import '../repository/setting_repository.dart';
 
 // デモ版 settings.css の danger 赤 (#e07b7b) に相当する色
 const Color _danger = Color(0xFFE07B7B);
@@ -22,9 +21,9 @@ class Setting extends StatefulWidget {
 }
 
 class _SettingState extends State<Setting> {
-  // ミュートワード（UC-17: shared_preferences にユーザーID単位で保存）
-  final _muteRepo = MuteWordRepository();
-  List<String> _muteWords = [];
+  // ミュートワード（UC-17: サーバーに保存。SettingRepository経由でAPIを叩く）
+  final _settingRepo = SettingRepository();
+  List<Map<String, dynamic>> _muteWords = [];
   bool _muteLoaded = false;
   final _muteController = TextEditingController();
 
@@ -34,9 +33,6 @@ class _SettingState extends State<Setting> {
 
   // 認証まわり（ログアウトで使用）
   final _authRepository = AuthRepository();
-
-  /// ミュートワードをユーザーID単位で保存するためのID（未ログイン時は 'local'）
-  String get _userId => FirebaseAuth.instance.currentUser?.uid ?? 'local';
 
   @override
   void initState() {
@@ -51,13 +47,25 @@ class _SettingState extends State<Setting> {
     super.dispose();
   }
 
+  // 一覧のミュートワード文字列を取得
+  String _wordOf(int index) => (_muteWords[index]['mute_word'] ?? '').toString();
+
+  // 一覧のミュートワードのpk（更新/削除で使う）
+  int _idOf(int index) => (_muteWords[index]['id'] as num).toInt();
+
   Future<void> _loadMuteWords() async {
-    final words = await _muteRepo.getAll(_userId);
-    if (!mounted) return;
-    setState(() {
-      _muteWords = words;
-      _muteLoaded = true;
-    });
+    try {
+      final words = await _settingRepo.getMuteWords();
+      if (!mounted) return;
+      setState(() {
+        _muteWords = words;
+        _muteLoaded = true;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _muteLoaded = true);
+      _toast(e.toString().replaceFirst('Exception: ', ''));
+    }
   }
 
   // デモ版のトースト相当（画面下部にふわっと出る）
@@ -80,23 +88,31 @@ class _SettingState extends State<Setting> {
     );
   }
 
-  // ---- ミュートワード操作（UC-17: repository経由で保存） ----
+  // ---- ミュートワード操作（UC-17: SettingRepository経由でサーバーに保存） ----
   Future<void> _addMuteWord() async {
     final word = _muteController.text.trim();
     if (word.isEmpty) return;
-    final ok = await _muteRepo.add(_userId, word);
-    if (!mounted) return;
-    if (!ok) {
-      // UC-17: 重複登録の場合
-      _toast('すでに登録されています');
+    try {
+      await _settingRepo.addMuteWord(word);
+    } catch (e) {
+      if (!mounted) return;
+      // UC-17: 重複登録の場合などサーバーからのエラーをそのまま表示
+      _toast(e.toString().replaceFirst('Exception: ', ''));
       return;
     }
+    if (!mounted) return;
     _muteController.clear();
     await _loadMuteWords();
   }
 
   Future<void> _removeMuteWord(int index) async {
-    await _muteRepo.remove(_userId, index);
+    try {
+      await _settingRepo.deleteMuteWord(_idOf(index));
+    } catch (e) {
+      if (!mounted) return;
+      _toast(e.toString().replaceFirst('Exception: ', ''));
+      return;
+    }
     if (!mounted) return;
     setState(() {
       if (_editingIndex == index) {
@@ -111,21 +127,22 @@ class _SettingState extends State<Setting> {
   void _startEdit(int index) {
     setState(() {
       _editingIndex = index;
-      _editController.text = _muteWords[index];
+      _editController.text = _wordOf(index);
     });
   }
 
   Future<void> _commitEdit(int index) async {
     final v = _editController.text.trim();
-    if (v.isNotEmpty) {
-      final ok = await _muteRepo.update(_userId, index, v);
-      if (!mounted) return;
-      if (!ok) {
+    if (v.isNotEmpty && v != _wordOf(index)) {
+      try {
+        await _settingRepo.updateMuteWord(_idOf(index), v);
+      } catch (e) {
+        if (!mounted) return;
         // UC-17: 重複する単語への更新の場合
-        _toast('すでに登録されています');
+        _toast(e.toString().replaceFirst('Exception: ', ''));
       }
     }
-    // 空の場合は更新せず編集を終了する（デモ版と同じ）
+    // 空または変更なしの場合は更新せず編集を終了する（デモ版と同じ）
     if (!mounted) return;
     setState(() => _editingIndex = null);
     await _loadMuteWords();
@@ -534,7 +551,7 @@ class _SettingState extends State<Setting> {
                     onSubmitted: (_) => _commitEdit(index),
                   )
                 : Text(
-                    _muteWords[index],
+                    _wordOf(index),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
